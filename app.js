@@ -444,18 +444,43 @@
   }
 
   /* ================= Покупка ================= */
+
+  async function buyDialog(bookId) {
+    const b = await api.book(bookId).catch(() => null);
+    const title = b ? b.title : bookId, price = b && b.price_label ? ` (${b.price_label})` : "";
+    const msg = `Здравствуйте, Венера!
+
+Я хочу купить книгу «${title}»${price}.
+Мой email на сайте: ${SESSION.user.email}
+
+Подскажите, пожалуйста, варианты оплаты.
+
+Спасибо!`;
+    const d = document.createElement("div");
+    d.className = "modal-wrap";
+    d.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+        <button class="m-close" aria-label="Закрыть">✕</button>
+        <span class="small gold">Покупка книги</span><h3 id="mTitle">Напишите автору</h3>
+        <p class="muted">Выберите мессенджер — сообщение уже готово. Венера ответит и подскажет удобный способ оплаты. После оплаты книга откроется по вашему email.</p>
+        <pre class="m-msg">${esc(msg)}</pre>
+        <div class="m-btns"><a class="primary wa-btn" href="https://wa.me/${esc(CFG.CONTACT_WHATSAPP)}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${IC.wa} Написать в WhatsApp</a>
+          <button class="primary vb-btn" data-vb>${IC.vb} Написать в Viber</button></div>
+        <p class="note" id="vbNote" hidden>Текст скопирован. В открывшемся чате Viber вставьте его: долгое нажатие → «Вставить» (на компьютере — Ctrl+V).</p>
+      </div>`;
+    document.body.appendChild(d);
+    const close = () => d.remove();
+    d.addEventListener("click", (e) => { if (e.target === d || e.target.closest(".m-close")) close(); });
+    d.querySelector("[data-vb]").onclick = async () => {
+      try { await navigator.clipboard.writeText(msg); } catch (e) {}
+      document.getElementById("vbNote").hidden = false;
+      setTimeout(() => { location.href = viberUrl(); }, 600);
+    };
+  }
+
   async function buy(bookId) {
     if (!SESSION) { toast("Сначала войдите или зарегистрируйтесь"); location.hash = "#/login?next=" + encodeURIComponent("#/book/" + bookId); return; }
-    if (DEMO) { api.demoBuy(bookId); toast("Демо: книга «куплена»"); location.hash = "#/thanks/" + bookId; return; }
     const link = (CFG.PAYMENT_LINKS || {})[bookId];
-    if (!link) {
-      // Оплата напрямую автору: открываем WhatsApp с готовым сообщением
-      const b = await api.book(bookId).catch(() => null);
-      const msg = `Здравствуйте! Хочу купить книгу «${b ? b.title : bookId}». Мой email на сайте: ${SESSION.user.email}`;
-      if (CFG.CONTACT_WHATSAPP) location.href = `https://wa.me/${CFG.CONTACT_WHATSAPP}?text=${encodeURIComponent(msg)}`;
-      else toast("Свяжитесь с автором для покупки");
-      return;
-    }
+    if (!link || DEMO) return buyDialog(bookId);
     const u = new URL(link);
     u.searchParams.set("prefilled_email", SESSION.user.email);
     u.searchParams.set("client_reference_id", bookId + "__" + SESSION.user.id);
