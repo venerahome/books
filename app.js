@@ -161,8 +161,8 @@
             <h1>${esc(b.title)}</h1>
             <p class="lead">${esc(paras[0] || "")}</p>
             <div class="cta">${owned
-              ? `<a class="primary light" href="#/read/${esc(id)}/${startIdx}">${last != null ? "Продолжить чтение" : "Начать читать"}</a><span class="owned">✓ Книга ваша</span>`
-              : `<button class="primary light" data-act="buy" data-book="${esc(id)}">Купить и читать · ${esc(b.price_label || "")}</button>
+              ? `<a class="primary" href="#/read/${esc(id)}/${startIdx}">${last != null ? "Продолжить чтение" : "Начать читать"}</a><span class="owned">✓ Книга ваша</span>`
+              : `<button class="primary" data-act="buy" data-book="${esc(id)}">Купить и читать · ${esc(b.price_label || "")}</button>
                  ${firstFree ? `<a class="ghost-l" href="#/read/${esc(id)}/${firstFree.idx}">Читать отрывок бесплатно ↗</a>` : ""}`}
             </div>
             ${reviews.length ? `<div class="hero-rating">${stars(Math.round(avg))} <span>${avg.toFixed(1)} · ${reviews.length} ${plural(reviews.length, "отзыв", "отзыва", "отзывов")}</span></div>` : ""}
