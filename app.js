@@ -145,7 +145,8 @@
     document.body.className = "";
     const owned = ACCESS.has(id) || ADMIN;
     const last = store.get("last_" + id, null);
-    const firstFree = toc.find((c) => c.free);
+    const exIdx = (CFG.EXCERPT || {})[id];
+    const firstFree = (exIdx != null && toc.find((c) => c.idx === exIdx)) || toc.find((c) => c.free);
     const startIdx = last ?? (toc[0] ? toc[0].idx : 0);
     const paras = String(b.description || "").split("\n").filter(Boolean);
     const freeNames = toc.filter((c) => c.free).map((c) => parseTitle(c.title));
