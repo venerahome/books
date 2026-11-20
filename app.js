@@ -80,6 +80,7 @@
   }
 
   const api = DEMO ? demoApi() : supaApi();
+  const MANUAL_PAY = (id) => !DEMO && !((CFG.PAYMENT_LINKS || {})[id]);
   let SESSION = null, ACCESS = new Set(), ADMIN = false;
 
   async function refreshUser() {
@@ -136,7 +137,7 @@
                <button class="btn btn-fire" data-act="buy" data-book="${esc(id)}">Купить и читать</button>
                ${freeCount ? `<a class="btn btn-ghost" href="#/read/${esc(id)}/${toc[0].idx}">Читать бесплатно</a>` : ""}`}
           </div>
-          ${owned ? "" : `<div class="note">${freeCount ? `Первые главы (${freeCount}) — бесплатно. ` : ""}Книга читается онлайн на сайте с телефона или компьютера. Доступ навсегда.</div>`}
+          ${owned ? "" : `<div class="note">${freeCount ? `Первые главы (${freeCount}) — бесплатно. ` : ""}Книга читается онлайн на сайте с телефона или компьютера. Доступ навсегда.${MANUAL_PAY(id) ? " Чтобы купить, зарегистрируйтесь и нажмите «Купить и читать» — откроется WhatsApp для связи с автором." : ""}</div>`}
         </div></div></section>
       <section class="section"><h2>Содержание</h2><ul class="toc">${toc.map((c) => {
         const t = parseTitle(c.title), open = owned || c.free;
@@ -165,7 +166,9 @@
         `<p class="${i === 0 ? "first" : ""}${p.trim().startsWith("—") ? " dlg" : ""}">${esc(p)}</p>`).join("");
     } else {
       body = `<div class="paywall"><h3>Продолжение — в полной версии</h3>
-        <p>${SESSION ? "Купите книгу, и все главы откроются сразу после оплаты." : "Войдите или зарегистрируйтесь, чтобы купить книгу. После оплаты все главы откроются сразу."}</p>
+        <p>${MANUAL_PAY(id)
+          ? (SESSION ? "Нажмите кнопку — откроется WhatsApp с сообщением автору. После оплаты автор откроет вам все главы." : "Зарегистрируйтесь на сайте, затем нажмите «Купить» — откроется WhatsApp с сообщением автору. После оплаты все главы откроются по вашему email.")
+          : (SESSION ? "Купите книгу, и все главы откроются сразу после оплаты." : "Войдите или зарегистрируйтесь, чтобы купить книгу. После оплаты все главы откроются сразу.")}</p>
         <button class="btn btn-fire" data-act="buy" data-book="${esc(id)}">Купить за ${esc(b.price_label || "")}</button></div>`;
     }
     const wm = SESSION ? watermark(SESSION.user.email) : "";
@@ -302,7 +305,14 @@
     if (!SESSION) { toast("Сначала войдите или зарегистрируйтесь"); location.hash = "#/login?next=" + encodeURIComponent("#/book/" + bookId); return; }
     if (DEMO) { api.demoBuy(bookId); toast("Демо: книга «куплена»"); location.hash = "#/thanks/" + bookId; return; }
     const link = (CFG.PAYMENT_LINKS || {})[bookId];
-    if (!link) { toast("Оплата пока не настроена"); return; }
+    if (!link) {
+      // Оплата напрямую автору: открываем WhatsApp с готовым сообщением
+      const b = await api.book(bookId).catch(() => null);
+      const msg = `Здравствуйте! Хочу купить книгу «${b ? b.title : bookId}». Мой email на сайте: ${SESSION.user.email}`;
+      if (CFG.CONTACT_WHATSAPP) location.href = `https://wa.me/${CFG.CONTACT_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+      else toast("Свяжитесь с автором для покупки");
+      return;
+    }
     const u = new URL(link);
     u.searchParams.set("prefilled_email", SESSION.user.email);
     u.searchParams.set("client_reference_id", bookId + "__" + SESSION.user.id);
