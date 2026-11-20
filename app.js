@@ -274,18 +274,29 @@
         <p class="small">Например, если человек оплатил переводом или вы дарите книгу.</p>
         <form id="g" class="grid2"><label class="field" style="margin:0"><span>Email читателя</span><input name="email" type="email" required></label>
           <label class="field" style="margin:0"><span>Книга</span><select name="book">${books.map((b) => `<option value="${esc(b.id)}">${esc(b.title)}</option>`).join("")}</select></label>
-          <button class="btn btn-fire" type="submit">Открыть</button></form></div>
+          <button class="btn btn-fire" type="submit">Открыть</button></form>
+        <div id="sent" class="sent" hidden></div></div>
       <div class="card"><h2>Читатели</h2>${list.length ? `<table class="list"><tr><th>Email</th><th>Книга</th><th>Как</th><th>Дата</th><th></th></tr>
         ${list.map((r) => `<tr><td>${esc(r.email)}</td><td>${esc(bookName(r.book_id))}</td><td><span class="pill">${r.source === "stripe" ? "Stripe" : "вручную"}</span></td>
           <td>${esc(new Date(r.created_at).toLocaleDateString("ru-RU"))}</td>
-          <td><button class="btn btn-ghost btn-small" data-act="revoke" data-email="${esc(r.email)}" data-book="${esc(r.book_id)}">Закрыть</button></td></tr>`).join("")}</table>`
+          <td style="white-space:nowrap"><a class="btn btn-ghost btn-small" title="Отправить письмо" target="_blank" rel="noopener" href="${mailLink(r.email, bookName(r.book_id))}">✉</a>
+          <button class="btn btn-ghost btn-small" data-act="revoke" data-email="${esc(r.email)}" data-book="${esc(r.book_id)}">Закрыть</button></td></tr>`).join("")}</table>`
         : `<p class="small">Пока никого нет.</p>`}</div>
       <div class="card"><h2>Загрузить или обновить книгу</h2>
         <p class="small">Выберите файл книги (.json), который подготовил Claude. Если книга уже есть — текст обновится.</p>
         <input type="file" id="bookfile" accept=".json,application/json"> <span class="small" id="imp"></span></div></div>` + foot();
     document.getElementById("g").onsubmit = async (e) => {
       e.preventDefault(); const fd = new FormData(e.target);
-      try { await api.grant(fd.get("email"), fd.get("book"), "вручную"); toast("Доступ открыт"); pageAdmin(); } catch (ex) { toast("Ошибка: " + ex.message); }
+      const email = String(fd.get("email")).toLowerCase().trim(), book = fd.get("book");
+      try {
+        await api.grant(email, book, "вручную");
+        await pageAdmin();
+        const box = document.getElementById("sent");
+        box.hidden = false;
+        box.innerHTML = `<b>Доступ для ${esc(email)} открыт.</b> Отправьте читателю письмо с инструкцией:
+          <a class="btn btn-fire btn-small" target="_blank" rel="noopener" href="${mailLink(email, bookName(book))}">✉ Отправить письмо читателю</a>`;
+        box.scrollIntoView({ behavior: "smooth", block: "center" });
+      } catch (ex) { toast("Ошибка: " + ex.message); }
     };
     document.getElementById("bookfile").onchange = async (e) => {
       const f = e.target.files[0]; if (!f) return; const s = document.getElementById("imp");
@@ -293,6 +304,30 @@
         s.textContent = `Готово: «${json.book.title}», глав: ${json.chapters.length}`; toast("Книга загружена"); }
       catch (ex) { s.textContent = "Ошибка: " + ex.message; }
     };
+  }
+
+
+  function mailLink(email, bookTitle) {
+    const site = location.origin + location.pathname;
+    const subject = `Доступ к книге «${bookTitle}» открыт`;
+    const body = `Здравствуйте!
+
+Спасибо, что выбрали книгу «${bookTitle}». Доступ для вас открыт.
+
+Как начать читать:
+1. Откройте сайт: ${site}
+2. Нажмите «Войти» → «Регистрация» и зарегистрируйтесь с этим email: ${email}
+   (если вы уже зарегистрированы — просто войдите).
+3. Нажмите «Начать читать».
+
+Книга читается онлайн с телефона или компьютера, а сайт запоминает место, где вы остановились.
+
+Приятного чтения! Если будут вопросы — просто ответьте на это письмо${CFG.CONTACT_WHATSAPP ? " или напишите мне в WhatsApp: +" + CFG.CONTACT_WHATSAPP : ""}.
+
+С теплом,
+Венера Хасанова`;
+    return "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(email) +
+      "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
   }
 
   function pageNotFound() {

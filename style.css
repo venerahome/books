@@ -153,3 +153,5 @@ table.list th{color:#a8968a;font-weight:500;font-size:12px;text-transform:upperc
 @media print{ body *{display:none!important} body::after{content:"Печать недоступна";display:block;padding:40px;font-size:20px} }
 .paywall p{text-indent:0!important;text-align:center!important;font-family:var(--ui)!important;font-size:15px!important;line-height:1.55!important}
 .paywall p::first-letter{all:unset}
+.sent{margin-top:16px;padding:14px 16px;border-radius:14px;background:rgba(159,224,169,.1);border:1px solid rgba(159,224,169,.3);color:#d8f3dc;font-size:14px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.sent[hidden]{display:none}
