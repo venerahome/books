@@ -39,6 +39,11 @@
       async accessList() { return ok(await sb.from("access").select("*").order("created_at", { ascending: false })); },
       async grant(email, book, note) { ok(await sb.from("access").upsert({ email: email.toLowerCase().trim(), book_id: book, source: "manual", note }, { onConflict: "email,book_id" })); },
       async revoke(email, book) { ok(await sb.from("access").delete().eq("email", email).eq("book_id", book)); },
+      async reviews(book) { return ok(await sb.from("reviews").select("id,name,city,rating,body,created_at").eq("book_id", book).eq("approved", true).order("created_at", { ascending: false })); },
+      async addReview(r) { ok(await sb.from("reviews").insert(r)); },
+      async allReviews() { return ok(await sb.from("reviews").select("*").order("created_at", { ascending: false })); },
+      async setReview(id, approved) { ok(await sb.from("reviews").update({ approved }).eq("id", id)); },
+      async delReview(id) { ok(await sb.from("reviews").delete().eq("id", id)); },
       async importBook(json) {
         ok(await sb.from("books").upsert(json.book));
         const rows = json.chapters.map((c) => ({ ...c, book_id: json.book.id }));
@@ -75,6 +80,11 @@
       async grant(email, book) { access.add(book); store.set("demo_access", [...access]); },
       async revoke(email, book) { access.delete(book); store.set("demo_access", [...access]); },
       async importBook() {},
+      async reviews(book) { return store.get("demo_reviews", D.reviews || []).filter((r) => r.approved && r.book_id === book); },
+      async addReview(r) { const a = store.get("demo_reviews", D.reviews || []); a.unshift({ ...r, id: String(Date.now()), approved: false, created_at: new Date().toISOString() }); store.set("demo_reviews", a); },
+      async allReviews() { return store.get("demo_reviews", D.reviews || []); },
+      async setReview(id, approved) { const a = store.get("demo_reviews", D.reviews || []); a.forEach((r) => { if (r.id === id) r.approved = approved; }); store.set("demo_reviews", a); },
+      async delReview(id) { store.set("demo_reviews", store.get("demo_reviews", D.reviews || []).filter((r) => r.id !== id)); },
       demoBuy(book) { access.add(book); store.set("demo_access", [...access]); },
     };
   }
@@ -90,17 +100,30 @@
   }
 
   /* ================= Общие элементы ================= */
-  function topbar() {
+  const waUrl = (text) => `https://wa.me/${CFG.CONTACT_WHATSAPP}${text ? "?text=" + encodeURIComponent(text) : ""}`;
+  const viberUrl = () => `viber://chat?number=${encodeURIComponent("+" + CFG.CONTACT_VIBER)}`;
+  const IC = {
+    wa: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.27.86 5.82 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23-1.48 0-2.93-.39-4.19-1.15l-.3-.17-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c.01-4.54 3.7-8.25 8.25-8.25M8.53 7.33c-.16 0-.43.06-.66.31-.22.25-.87.86-.87 2.07 0 1.22.89 2.39 1 2.56.14.17 1.76 2.67 4.25 3.73.59.27 1.05.42 1.41.53.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.16-.48-.27-.25-.14-1.47-.74-1.69-.82-.23-.08-.37-.12-.56.12-.16.25-.64.81-.78.97-.15.17-.29.19-.53.07-.26-.13-1.06-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.12-.24-.01-.39.11-.5.11-.11.27-.29.37-.44.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.11-.56-1.35-.77-1.84-.2-.48-.4-.42-.56-.43-.14 0-.3-.01-.47-.01"/></svg>`,
+    vb: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.4 0C9.47.03 5.33.35 3.02 2.47 1.30 4.18.7 6.70.63 9.82c-.06 3.11-.13 8.95 5.5 10.54v2.42s-.04.97.6 1.17c.79.25 1.24-.5 1.99-1.3l1.4-1.58c3.85.32 6.80-.42 7.14-.53.78-.25 5.19-.81 5.91-6.65.74-6.02-.36-9.82-2.34-11.54l-.01-.01C20.22 1.83 17.88.07 12.61.03c0 0-.39-.03-1.03-.02zm.06 1.62c.55 0 .88.01.88.01 4.46.03 6.6 1.36 7.1 1.81 1.64 1.40 2.48 4.77 1.86 9.71-.59 4.78-4.09 5.08-4.74 5.29-.27.09-2.82.72-6.01.51 0 0-2.38 2.87-3.12 3.62-.12.12-.26.17-.35.14-.13-.03-.17-.19-.16-.41l.02-3.92c-4.77-1.32-4.49-6.29-4.44-8.89.06-2.60.55-4.74 2-6.17 1.96-1.77 5.48-2.03 7.06-2.03zm.33 2.51a.39.39 0 0 0 0 .77c1.30.01 2.37.43 3.22 1.25.85.83 1.29 1.95 1.30 3.38a.39.39 0 1 0 .78 0c-.02-1.60-.53-2.93-1.53-3.93-1-.98-2.28-1.47-3.77-1.48zm-3.14.67c-.21-.03-.43.01-.62.13l-.02.01c-.41.24-.79.54-1.12.89-.27.31-.42.63-.46.94a1.2 1.2 0 0 0 .05.54l.01.01c.31.90.7 1.77 1.18 2.59.62 1.12 1.39 2.17 2.28 3.09l.03.04.04.03.03.03.03.03c.93.89 1.97 1.66 3.1 2.29 1.28.70 2.06 1.03 2.53 1.17v.01c.14.04.27.06.40.06.43-.03.84-.21 1.17-.49.35-.33.64-.71.88-1.13v-.01c.23-.42.15-.83-.17-1.10a12.9 12.9 0 0 0-1.68-1.21c-.43-.24-.88-.10-1.06.15l-.39.49c-.20.24-.56.21-.56.21l-.01.01c-2.70-.69-3.42-3.42-3.42-3.42s-.03-.37.22-.56l.48-.39c.23-.19.39-.63.14-1.07a12.4 12.4 0 0 0-1.20-1.68.86.86 0 0 0-.52-.31zm3.42.84a.39.39 0 0 0 0 .78c.89.01 1.56.30 2.04.78.48.49.71 1.13.72 1.99a.39.39 0 1 0 .78-.01c-.01-1.04-.31-1.89-.94-2.53-.62-.64-1.51-.99-2.60-1.01zm.38 1.58a.39.39 0 0 0-.04.78c.68.03 1.03.36 1.07 1.07a.39.39 0 1 0 .78-.04c-.05-1.09-.71-1.77-1.81-1.81z"/></svg>`,
+  };
+  function topbar(transparent) {
     const user = SESSION
-      ? `${ADMIN ? `<a class="link-btn" href="#/admin">Админка</a>` : ""}
-         <button class="link-btn" data-act="logout" title="${esc(SESSION.user.email)}">Выйти</button>`
-      : `<a class="link-btn" href="#/login">Войти</a>`;
-    return `${DEMO ? `<div class="demo-banner">Демо-версия: так будет выглядеть читалка. Вход и оплата здесь не настоящие.</div>` : ""}
-      <header class="topbar"><a class="brand" href="#/">${esc(CFG.SITE_NAME || "Книги")}</a><span class="sp"></span>
-      <a class="link-btn" href="#/">Мои книги</a>${user}</header>`;
+      ? `${ADMIN ? `<a class="nav-a" href="#/admin">Админка</a>` : ""}<button class="nav-a" data-act="logout" title="${esc(SESSION.user.email)}">Выйти</button>`
+      : `<a class="nav-a" href="#/login">Войти</a>`;
+    return `${DEMO ? `<div class="demo-banner">Демо-версия: так будет выглядеть сайт. Вход и оплата здесь не настоящие.</div>` : ""}
+      <header class="site-head ${transparent ? "on-hero" : ""}"><a class="logo" href="#/">VENI<span>книги</span></a>
+      <nav class="nav"><button class="nav-a hide-m" data-scroll="book">О книге</button><button class="nav-a hide-m" data-scroll="author">Кто я</button>
+      <button class="nav-a hide-m" data-scroll="reviews">Отзывы</button>${user}</nav></header>`;
   }
-  const foot = () => `<div class="foot">© ${new Date().getFullYear()} Венера Хасанова · Все права защищены · Текст защищен от копирования
-     ${CFG.CONTACT_WHATSAPP ? ` · <a href="https://wa.me/${esc(CFG.CONTACT_WHATSAPP)}" target="_blank" rel="noopener">Написать автору</a>` : ""}</div>`;
+  const floating = () => `<div class="fab">
+      <a class="fab-b wa" href="${waUrl("Здравствуйте, Венера!")}" target="_blank" rel="noopener" aria-label="WhatsApp">${IC.wa}</a>
+      <a class="fab-b vb" href="${viberUrl()}" aria-label="Viber">${IC.vb}</a></div>`;
+  const foot = () => `<footer class="site-foot"><div class="foot-in">
+      <div><div class="logo dark">VENI<span>книги</span></div><p class="muted">© ${new Date().getFullYear()} Венера Хасанова. Все права защищены. Текст книг защищен от копирования.</p></div>
+      <div class="foot-links"><a href="${waUrl()}" target="_blank" rel="noopener">WhatsApp</a><a href="${viberUrl()}">Viber</a>
+      ${CFG.CONTACT_EMAIL ? `<a href="mailto:${esc(CFG.CONTACT_EMAIL)}">${esc(CFG.CONTACT_EMAIL)}</a>` : ""}<a href="https://venihomes.eu/" target="_blank" rel="noopener">venihomes.eu</a></div>
+    </div></footer>` + floating();
+  const stars = (n) => `<span class="stars" aria-label="${n} из 5">${"★".repeat(n)}<i>${"★".repeat(5 - n)}</i></span>`;
   function parseTitle(t) {
     const m = /^(Глава\s+\d+)\s*[:.]\s*(.+)$/.exec(t || "");
     return m ? { kicker: m[1], name: m[2] } : { kicker: "", name: t };
@@ -117,35 +140,110 @@
   }
 
   async function pageBook(id) {
-    const [b, toc] = await Promise.all([api.book(id), api.toc(id)]);
+    const [b, toc, reviews] = await Promise.all([api.book(id), api.toc(id), api.reviews(id).catch(() => [])]);
     if (!b) return pageNotFound();
     document.body.className = "";
     const owned = ACCESS.has(id) || ADMIN;
     const last = store.get("last_" + id, null);
+    const firstFree = toc.find((c) => c.free);
     const startIdx = last ?? (toc[0] ? toc[0].idx : 0);
-    const desc = String(b.description || "").split("\n").filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join("");
-    const freeCount = toc.filter((c) => c.free).length;
-    $app.innerHTML = topbar() + `
-      <section class="hero"><div class="hero-bg" style="background-image:url('${esc(b.cover_url)}')"></div>
-        <div class="hero-in"><img class="cover" src="${esc(b.cover_url)}" alt="Обложка">
-        <div><div class="kicker">${esc(b.author || "")}</div>
-          <h1 class="h-title">${esc(b.title)}</h1><p class="h-sub">${esc(b.subtitle || "")}</p>
-          <div class="desc">${desc}</div>
-          <div class="cta">${owned
-            ? `<span class="owned">✓ Книга ваша</span><a class="btn btn-fire" href="#/read/${esc(id)}/${startIdx}">${last != null ? "Продолжить чтение" : "Начать читать"}</a>`
-            : `<span class="price">${esc(b.price_label || "")}</span>
-               <button class="btn btn-fire" data-act="buy" data-book="${esc(id)}">Купить и читать</button>
-               ${freeCount ? `<a class="btn btn-ghost" href="#/read/${esc(id)}/${toc[0].idx}">Читать бесплатно</a>` : ""}`}
+    const paras = String(b.description || "").split("\n").filter(Boolean);
+    const freeNames = toc.filter((c) => c.free).map((c) => parseTitle(c.title));
+    const A = CFG.AUTHOR || {};
+    const avg = reviews.length ? (reviews.reduce((a, r) => a + (r.rating || 5), 0) / reviews.length) : 0;
+    $app.innerHTML = topbar(true) + `
+      <section class="hero">
+        <div class="hero-bg" style="background-image:url('${esc(b.cover_url)}')"></div><div class="shade"></div>
+        <div class="hero-in">
+          <div class="hero-text">
+            <span class="small">${esc(b.author || "")} · ${esc(b.subtitle || "")}</span>
+            <h1>${esc(b.title)}</h1>
+            <p class="lead">${esc(paras[0] || "")}</p>
+            <div class="cta">${owned
+              ? `<a class="primary light" href="#/read/${esc(id)}/${startIdx}">${last != null ? "Продолжить чтение" : "Начать читать"}</a><span class="owned">✓ Книга ваша</span>`
+              : `<button class="primary light" data-act="buy" data-book="${esc(id)}">Купить и читать · ${esc(b.price_label || "")}</button>
+                 ${firstFree ? `<a class="ghost-l" href="#/read/${esc(id)}/${firstFree.idx}">Читать отрывок бесплатно ↗</a>` : ""}`}
+            </div>
+            ${reviews.length ? `<div class="hero-rating">${stars(Math.round(avg))} <span>${avg.toFixed(1)} · ${reviews.length} ${plural(reviews.length, "отзыв", "отзыва", "отзывов")}</span></div>` : ""}
           </div>
-          ${owned ? "" : `<div class="note">${freeCount ? `Первые главы (${freeCount}) — бесплатно. ` : ""}Книга читается онлайн на сайте с телефона или компьютера. Доступ навсегда.${MANUAL_PAY(id) ? " Чтобы купить, зарегистрируйтесь и нажмите «Купить и читать» — откроется WhatsApp для связи с автором." : ""}</div>`}
-        </div></div></section>
-      <section class="section"><h2>Содержание</h2><ul class="toc">${toc.map((c) => {
-        const t = parseTitle(c.title), open = owned || c.free;
-        return `<li class="${open ? "" : "locked"}"><a href="#/read/${esc(id)}/${c.idx}">
-          <span class="num">${esc(t.kicker || "")}</span><span class="t">${esc(t.name)}</span>
-          ${last === c.idx ? `<span class="here">вы здесь</span>` : ""}
-          ${!owned && c.free ? `<span class="tag">бесплатно</span>` : ""}${open ? "" : `<span class="lock">🔒</span>`}</a></li>`;
-      }).join("")}</ul></section>` + foot();
+          <img class="cover" src="${esc(b.cover_url)}" alt="Обложка книги «${esc(b.title)}»">
+        </div>
+        <button class="down" data-scroll="book">ЛИСТАЙТЕ ВНИЗ ↓</button>
+      </section>
+      <main>
+        <section class="block" id="book">
+          <div class="two">
+            <div><span class="small gold">О книге</span><h2>История, которую нельзя забыть</h2>
+              ${paras.slice(1).map((p) => `<p class="muted big">${esc(p)}</p>`).join("")}
+              <ul class="perks"><li><b>Онлайн</b><span>читайте на телефоне, планшете или компьютере</span></li>
+                <li><b>Навсегда</b><span>доступ к книге остается у вас</span></li>
+                <li><b>Закладка</b><span>сайт помнит, где вы остановились</span></li></ul>
+              ${owned ? "" : `<div class="buy-box"><div><span class="small">Электронная версия</span><div class="price">${esc(b.price_label || "")}</div></div>
+                <button class="primary" data-act="buy" data-book="${esc(id)}">Купить и читать</button></div>
+                <p class="note">${freeNames.length ? `Бесплатно: ${freeNames.map((t) => esc(t.kicker ? t.kicker + " «" + t.name + "»" : t.name)).join(", ")}. ` : ""}${MANUAL_PAY(id) ? "Чтобы купить, зарегистрируйтесь и нажмите «Купить» — откроется WhatsApp для связи со мной. После оплаты я открою вам книгу по email." : "После оплаты все главы откроются сразу."}</p>`}
+            </div>
+            <div><span class="small gold">Содержание</span>
+              <ol class="toc">${toc.map((c) => {
+                const t = parseTitle(c.title), open = owned || c.free;
+                return `<li class="${open ? "" : "locked"}"><a href="#/read/${esc(id)}/${c.idx}"><span class="num">${esc(t.kicker ? t.kicker.replace("Глава ", "") : "—")}</span>
+                  <span class="t">${esc(t.name)}</span>${last === c.idx ? `<span class="here">вы здесь</span>` : ""}
+                  ${!owned && c.free ? `<span class="tag">бесплатно</span>` : ""}${open ? "" : `<span class="lock">🔒</span>`}</a></li>`;
+              }).join("")}</ol></div>
+          </div>
+        </section>
+
+        <section class="about" id="author">
+          ${A.photo ? `<img class="portrait" src="${esc(A.photo)}" alt="Венера Хасанова">` : ""}
+          <div><span class="small gold">${esc(A.eyebrow || "Автор")}</span><h2>${esc(A.title || "Венера Хасанова")}</h2>
+            ${(A.text || []).map((p) => `<p class="muted">${esc(p)}</p>`).join("")}
+            ${(A.facts || []).length ? `<ul class="about-list">${A.facts.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
+            <div class="cta"><a class="primary wa-btn" href="${waUrl("Здравствуйте, Венера!")}" target="_blank" rel="noopener">${IC.wa} WhatsApp</a>
+              <a class="primary vb-btn" href="${viberUrl()}">${IC.vb} Viber</a></div>
+          </div>
+        </section>
+
+        <section class="block" id="reviews">
+          <div class="rev-head"><div><span class="small gold">Отзывы читателей</span><h2>Что говорят читатели</h2></div>
+            ${reviews.length ? `<div class="rev-avg"><b>${avg.toFixed(1)}</b>${stars(Math.round(avg))}<span>${reviews.length} ${plural(reviews.length, "отзыв", "отзыва", "отзывов")}</span></div>` : ""}</div>
+          <div class="rev-grid">${reviews.length ? reviews.map((r) => `<article class="rev">${stars(r.rating || 5)}<p>${esc(r.body)}</p>
+              <div class="rev-by"><b>${esc(r.name)}</b>${r.city ? ` · ${esc(r.city)}` : ""}<span>${esc(new Date(r.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }))}</span></div></article>`).join("")
+            : `<p class="muted">Отзывов пока нет — станьте первым, кто поделится впечатлениями.</p>`}</div>
+          <form class="rev-form" id="revForm" novalidate>
+            <h3>Оставить отзыв</h3><p class="muted">Отзыв появится на сайте после проверки автором.</p>
+            <div class="rate" role="radiogroup" aria-label="Оценка">${[5, 4, 3, 2, 1].map((n) => `<input type="radio" name="rating" id="r${n}" value="${n}" ${n === 5 ? "checked" : ""}><label for="r${n}" title="${n}">★</label>`).join("")}</div>
+            <div class="f2"><label class="field"><span>Ваше имя *</span><input name="name" maxlength="60" required></label>
+              <label class="field"><span>Город</span><input name="city" maxlength="60"></label></div>
+            <label class="field"><span>Отзыв *</span><textarea name="body" rows="5" maxlength="2000" required placeholder="Что вас тронуло, какой момент запомнился…"></textarea></label>
+            <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <div class="err" id="revErr"></div>
+            <button class="primary" type="submit">Отправить отзыв</button>
+            <p class="form-ok" id="revOk" hidden>Спасибо! Ваш отзыв отправлен и появится после проверки.</p>
+          </form>
+        </section>
+      </main>` + foot();
+    const f = document.getElementById("revForm");
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(f), err = document.getElementById("revErr"), btn = f.querySelector("button[type=submit]");
+      err.textContent = "";
+      if (fd.get("website")) return;
+      const name = String(fd.get("name") || "").trim(), body = String(fd.get("body") || "").trim();
+      if (!name) { err.textContent = "Укажите, пожалуйста, имя."; return; }
+      if (body.length < 10) { err.textContent = "Напишите, пожалуйста, хотя бы пару предложений."; return; }
+      const lastSent = store.get("rev_sent", 0);
+      if (Date.now() - lastSent < 60000) { err.textContent = "Вы только что отправили отзыв. Попробуйте чуть позже."; return; }
+      btn.disabled = true;
+      try {
+        await api.addReview({ book_id: id, name, city: String(fd.get("city") || "").trim() || null, rating: Number(fd.get("rating") || 5), body });
+        store.set("rev_sent", Date.now());
+        f.querySelectorAll(".field,.rate,.f2,button[type=submit]").forEach((x) => (x.style.display = "none"));
+        document.getElementById("revOk").hidden = false;
+      } catch (ex) { err.textContent = "Не получилось отправить: " + (ex.message || ex); btn.disabled = false; }
+    };
+  }
+  function plural(n, one, few, many) {
+    const m10 = n % 10, m100 = n % 100;
+    return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? few : many;
   }
 
   async function pageRead(id, idx) {
@@ -262,14 +360,16 @@
   async function pageAdmin() {
     if (!ADMIN) return pageLogin("#/admin");
     document.body.className = "";
-    const [list, books] = await Promise.all([api.accessList(), api.books()]);
+    const [list, books, revs] = await Promise.all([api.accessList(), api.books(), api.allReviews().catch(() => [])]);
+    const pending = revs.filter((r) => !r.approved), shown = revs.filter((r) => r.approved);
     const bookName = (id) => (books.find((b) => b.id === id) || {}).title || id;
     const stripe = list.filter((r) => r.source === "stripe").length;
     $app.innerHTML = topbar() + `<div class="admin"><h1>Админка</h1><p class="small">Вы вошли как ${esc(SESSION.user.email)}</p>
       <div class="card"><div class="stats">
         <div class="stat"><b>${list.length}</b><span>всего доступов</span></div>
         <div class="stat"><b>${stripe}</b><span>оплачено через Stripe</span></div>
-        <div class="stat"><b>${list.length - stripe}</b><span>открыто вручную</span></div></div></div>
+        <div class="stat"><b>${list.length - stripe}</b><span>открыто вручную</span></div>
+        <div class="stat"><b>${pending.length}</b><span>отзывов ждут проверки</span></div></div></div>
       <div class="card"><h2>Открыть доступ вручную</h2>
         <p class="small">Например, если человек оплатил переводом или вы дарите книгу.</p>
         <form id="g" class="grid2"><label class="field" style="margin:0"><span>Email читателя</span><input name="email" type="email" required></label>
@@ -282,6 +382,13 @@
           <td style="white-space:nowrap"><a class="btn btn-ghost btn-small" title="Отправить письмо" target="_blank" rel="noopener" href="${mailLink(r.email, bookName(r.book_id))}">✉</a>
           <button class="btn btn-ghost btn-small" data-act="revoke" data-email="${esc(r.email)}" data-book="${esc(r.book_id)}">Закрыть</button></td></tr>`).join("")}</table>`
         : `<p class="small">Пока никого нет.</p>`}</div>
+      <div class="card" id="mod"><h2>Отзывы на проверке ${pending.length ? `<span class="badge">${pending.length}</span>` : ""}</h2>
+        ${pending.length ? pending.map((r) => `<div class="mrev">${stars(r.rating || 5)} <b>${esc(r.name)}</b>${r.city ? " · " + esc(r.city) : ""} <span class="small-d">${esc(new Date(r.created_at).toLocaleString("ru-RU"))}</span>
+          <p>${esc(r.body)}</p><button class="btn btn-fire btn-small" data-act="rev-ok" data-id="${esc(r.id)}">Опубликовать</button>
+          <button class="btn btn-ghost btn-small" data-act="rev-del" data-id="${esc(r.id)}">Удалить</button></div>`).join("") : `<p class="small">Новых отзывов нет.</p>`}
+        ${shown.length ? `<details class="pub"><summary>Опубликованные отзывы (${shown.length})</summary>${shown.map((r) => `<div class="mrev">${stars(r.rating || 5)} <b>${esc(r.name)}</b>
+          <p>${esc(r.body)}</p><button class="btn btn-ghost btn-small" data-act="rev-hide" data-id="${esc(r.id)}">Скрыть</button>
+          <button class="btn btn-ghost btn-small" data-act="rev-del" data-id="${esc(r.id)}">Удалить</button></div>`).join("")}</details>` : ""}</div>
       <div class="card"><h2>Загрузить или обновить книгу</h2>
         <p class="small">Выберите файл книги (.json), который подготовил Claude. Если книга уже есть — текст обновится.</p>
         <input type="file" id="bookfile" accept=".json,application/json"> <span class="small" id="imp"></span></div></div>` + foot();
@@ -376,9 +483,13 @@
   }
 
   document.addEventListener("click", async (e) => {
+    const sc = e.target.closest("[data-scroll]");
+    if (sc) { const el = document.getElementById(sc.dataset.scroll); if (el) el.scrollIntoView({ behavior: "smooth" }); else { location.hash = "#/"; setTimeout(() => { const x = document.getElementById(sc.dataset.scroll); if (x) x.scrollIntoView({ behavior: "smooth" }); }, 700); } return; }
     const a = e.target.closest("[data-act],[data-fs],[data-theme]"); if (!a) return;
     if (a.dataset.act === "logout") { await api.signOut(); await refreshUser(); location.hash = "#/"; route(); }
     else if (a.dataset.act === "buy") buy(a.dataset.book);
+    else if (a.dataset.act === "rev-ok" || a.dataset.act === "rev-hide") { await api.setReview(a.dataset.id, a.dataset.act === "rev-ok"); toast(a.dataset.act === "rev-ok" ? "Отзыв опубликован" : "Отзыв скрыт"); pageAdmin(); }
+    else if (a.dataset.act === "rev-del") { if (confirm("Удалить этот отзыв?")) { await api.delReview(a.dataset.id); toast("Отзыв удален"); pageAdmin(); } }
     else if (a.dataset.act === "settings") { const s = document.getElementById("settings"); s.hidden = !s.hidden; }
     else if (a.dataset.act === "revoke") {
       if (confirm(`Закрыть доступ для ${a.dataset.email}?`)) { await api.revoke(a.dataset.email, a.dataset.book); toast("Доступ закрыт"); pageAdmin(); }
@@ -405,6 +516,7 @@
   const _q = new URLSearchParams(location.search);
   if (_q.get("thanks")) { history.replaceState(null, "", location.pathname + "#/thanks/" + _q.get("thanks")); }
 
+  window.addEventListener("scroll", () => { const h = document.querySelector(".site-head.on-hero"); if (h) h.classList.toggle("solid", scrollY > 60); }, { passive: true });
   window.addEventListener("hashchange", route);
   api.onAuth(async () => {});
   refreshUser().then(route);
