@@ -125,7 +125,7 @@
     </div></footer>` + floating();
   const stars = (n) => `<span class="stars" aria-label="${n} из 5">${"★".repeat(n)}<i>${"★".repeat(5 - n)}</i></span>`;
   function parseTitle(t) {
-    const m = /^(Глава\s+\d+)\s*[:.]\s*(.+)$/.exec(t || "");
+    const m = /^((?:Глава|Chapter)\s+\d+)\s*[:.]\s*(.+)$/.exec(t || "");
     return m ? { kicker: m[1], name: m[2] } : { kicker: "", name: t };
   }
 
@@ -262,7 +262,7 @@
     if (ch && ch.body) {
       store.set("last_" + id, idx);
       body = ch.body.split("\n").filter((p) => p.trim()).map((p, i) =>
-        `<p class="${i === 0 ? "first" : ""}${p.trim().startsWith("—") ? " dlg" : ""}">${esc(p)}</p>`).join("");
+        `<p class="${i === 0 ? "first" : ""}${/^[—“"]/.test(p.trim()) ? " dlg" : ""}">${esc(p).replace(/\*([^*]+)\*/g, "<em>$1</em>")}</p>`).join("");
     } else {
       body = `<div class="paywall"><h3>Продолжение — в полной версии</h3>
         <p>${MANUAL_PAY(id)
