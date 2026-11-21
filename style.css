@@ -255,3 +255,20 @@ details.pub summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px
 .lang button{background:none;border:0;color:inherit;font-size:11px;letter-spacing:1px;padding:6px 9px;cursor:pointer;font-family:inherit}
 .lang button.on{background:var(--gold);color:#fff}
 @media (max-width:640px){.lang button{padding:6px 7px;font-size:10px}.lang{margin:0 2px}}
+/* Карточки книг на главной: описание, цена, «Подробнее» */
+.lib-card{display:block;color:inherit}
+.lib-card .ld{color:var(--muted);font-size:14px;line-height:1.5;margin:8px 0 10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.lib-card .lp{display:flex;align-items:center;gap:12px;font-size:14px}
+.lib-card .lp b{color:var(--ink)}
+.lib-card .lp span{color:var(--gold);letter-spacing:.5px}
+@media (max-width:640px){
+  .library{grid-template-columns:1fr;gap:14px}
+  .lib-card{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid rgba(138,111,184,.18);border-radius:10px;padding:12px}
+  .lib-card img{width:84px;flex:0 0 84px;border-radius:3px;box-shadow:0 6px 14px rgba(0,0,0,.18)}
+  .lib-card:hover img{transform:none}
+  .lib-card .li{flex:1;min-width:0}
+  .lib-card .lt{font-size:18px;line-height:1.2;margin-top:0}
+  .lib-card .ls{font-size:12px;margin-top:3px}
+  .lib-card .ld{font-size:13px;margin:6px 0 8px;-webkit-line-clamp:3}
+  .lib-card .lp{font-size:13px}
+}

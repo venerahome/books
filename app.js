@@ -25,7 +25,7 @@
       navBook: "О книге", navAuthor: "Кто я", navReviews: "Отзывы",
       hello: "Здравствуйте, Венера!",
       rights: "Все права защищены. Текст книг защищен от копирования.",
-      starsOf: (n) => `${n} из 5`, books: "Книги", bought: "куплено",
+      starsOf: (n) => `${n} из 5`, more: "Подробнее →", books: "Книги", bought: "куплено",
       continueReading: "Продолжить чтение", startReading: "Начать читать", owned: "✓ Книга ваша",
       buyRead: "Купить и читать", readFree: "Читать отрывок бесплатно ↗",
       reviewsN: (n) => `${n} ${pluralRu(n, "отзыв", "отзыва", "отзывов")}`,
@@ -69,7 +69,7 @@
       navBook: "The book", navAuthor: "About me", navReviews: "Reviews",
       hello: "Hello, Venera!",
       rights: "All rights reserved. Book texts are protected from copying.",
-      starsOf: (n) => `${n} out of 5`, books: "Books", bought: "purchased",
+      starsOf: (n) => `${n} out of 5`, more: "Details →", books: "Books", bought: "purchased",
       continueReading: "Continue reading", startReading: "Start reading", owned: "✓ This book is yours",
       buyRead: "Buy and read", readFree: "Read a free excerpt ↗",
       reviewsN: (n) => `${n} ${n === 1 ? "review" : "reviews"}`,
@@ -113,7 +113,7 @@
       navBook: "За книгата", navAuthor: "За мен", navReviews: "Отзиви",
       hello: "Здравейте, Венера!",
       rights: "Всички права запазени. Текстът на книгите е защитен от копиране.",
-      starsOf: (n) => `${n} от 5`, books: "Книги", bought: "закупена",
+      starsOf: (n) => `${n} от 5`, more: "Подробно →", books: "Книги", bought: "закупена",
       continueReading: "Продължи четенето", startReading: "Започни да четеш", owned: "✓ Книгата е ваша",
       buyRead: "Купи и чети", readFree: "Прочети откъс безплатно ↗",
       reviewsN: (n) => `${n} ${n === 1 ? "отзив" : "отзива"}`,
@@ -240,7 +240,7 @@
 
   const api = DEMO ? demoApi() : supaApi();
   const MANUAL_PAY = (id) => !DEMO && !((CFG.PAYMENT_LINKS || {})[id]);
-  let SESSION = null, ACCESS = new Set(), ADMIN = false;
+  let SESSION = null, ACCESS = new Set(), ADMIN = false, HOME_BOOK = null;
 
   async function refreshUser() {
     SESSION = await api.session();
@@ -281,11 +281,15 @@
   /* ================= Страницы ================= */
   async function pageLibrary() {
     const books = (await api.books()).slice().sort((a, b) => { const w = (x) => (bookLang(x) === LANG ? 0 : bookLang(x) === "ru" ? 1 : 2); return w(a) - w(b) || (a.sort || 0) - (b.sort || 0); });
+    HOME_BOOK = books[0] ? books[0].id : null;
     if (books.length === 1) return pageBook(books[0].id);
     document.body.className = "";
     $app.innerHTML = topbar() + `<div class="section"><h2>${L.books}</h2><div class="library">${books.map((b) => `
-      <a class="lib-card" href="#/book/${esc(b.id)}"><img src="${esc(b.cover_url)}" alt=""><div class="lt">${esc(b.title)}</div>
-      <div class="ls">${esc(b.subtitle || "")}${ACCESS.has(b.id) ? " · " + L.bought : ""}</div></a>`).join("")}</div></div>` + foot();
+      <a class="lib-card" href="#/book/${esc(b.id)}"><img src="${esc(b.cover_url)}" alt="${esc(L.coverAlt(b.title))}"><div class="li">
+      <div class="lt">${esc(b.title)}</div>
+      <div class="ls">${esc(b.subtitle || "")}${ACCESS.has(b.id) ? " · " + L.bought : ""}</div>
+      <p class="ld">${esc(String(b.description || "").split("\n")[0])}</p>
+      <div class="lp">${ACCESS.has(b.id) ? "" : `<b>${esc(b.price_label || "")}</b>`}<span>${L.more}</span></div></div></a>`).join("")}</div></div>` + foot();
   }
 
   async function pageBook(id) {
@@ -668,6 +672,15 @@ Venera Khassanova` : `Здравствуйте!
 
   document.addEventListener("click", async (e) => {
     const sc = e.target.closest("[data-scroll]");
+    if (sc) {
+      const id = sc.dataset.scroll, el = document.getElementById(id);
+      if (el) { el.scrollIntoView({ behavior: "smooth" }); return; }
+      let bookId = HOME_BOOK;
+      if (!bookId) { try { const bs = await api.books(); const m = bs.find((b) => bookLang(b) === LANG) || bs[0]; bookId = m && m.id; } catch (x) {} }
+      if (bookId) location.hash = "#/book/" + bookId;
+      for (let i = 0; i < 40; i++) { await new Promise((r) => setTimeout(r, 100)); const x = document.getElementById(id); if (x) { x.scrollIntoView({ behavior: "smooth" }); break; } }
+      return;
+    }
     if (sc) { const el = document.getElementById(sc.dataset.scroll); if (el) el.scrollIntoView({ behavior: "smooth" }); else { location.hash = "#/"; setTimeout(() => { const x = document.getElementById(sc.dataset.scroll); if (x) x.scrollIntoView({ behavior: "smooth" }); }, 700); } return; }
     const lb = e.target.closest("[data-lang]"); if (lb) { setLang(lb.dataset.lang); return; }
     const a = e.target.closest("[data-act],[data-fs],[data-theme]"); if (!a) return;
