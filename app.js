@@ -14,6 +14,155 @@
     clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 3200);
   }
 
+  /* ================= Языки интерфейса ================= */
+  const LANGS = ["ru", "en", "bg"];
+  const pluralRu = (n, one, few, many) => { const m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? few : many; };
+  const DICT = {
+    ru: {
+      locale: "ru-RU", siteName: "Книги Венеры Хасановой", logoSub: "книги", author: "Венера Хасанова",
+      admin: "Админка", logout: "Выйти", login: "Войти",
+      demo: "Демо-версия: так будет выглядеть сайт. Вход и оплата здесь не настоящие.",
+      navBook: "О книге", navAuthor: "Кто я", navReviews: "Отзывы",
+      hello: "Здравствуйте, Венера!",
+      rights: "Все права защищены. Текст книг защищен от копирования.",
+      starsOf: (n) => `${n} из 5`, books: "Книги", bought: "куплено",
+      continueReading: "Продолжить чтение", startReading: "Начать читать", owned: "✓ Книга ваша",
+      buyRead: "Купить и читать", readFree: "Читать отрывок бесплатно ↗",
+      reviewsN: (n) => `${n} ${pluralRu(n, "отзыв", "отзыва", "отзывов")}`,
+      coverAlt: (t) => `Обложка книги «${t}»`, scrollDown: "ЛИСТАЙТЕ ВНИЗ ↓",
+      aboutBook: "О книге", aboutTitle: "История, которую нельзя забыть",
+      perk1: ["Онлайн", "читайте на телефоне, планшете или компьютере"], perk2: ["Навсегда", "доступ к книге остается у вас"], perk3: ["Закладка", "сайт помнит, где вы остановились"],
+      ebook: "Электронная версия", free: "Бесплатно", q: (s) => `«${s}»`,
+      noteManual: "Чтобы купить, зарегистрируйтесь и нажмите «Купить» — откроется WhatsApp для связи со мной. После оплаты я открою вам книгу по email.",
+      noteAuto: "После оплаты все главы откроются сразу.",
+      contents: "Содержание", here: "вы здесь", freeTag: "бесплатно",
+      authorEyebrow: "Автор", readersReviews: "Отзывы читателей", whatReaders: "Что говорят читатели",
+      noReviews: "Отзывов пока нет — станьте первым, кто поделится впечатлениями.",
+      leaveReview: "Оставить отзыв", reviewModeration: "Отзыв появится на сайте после проверки автором.", rating: "Оценка",
+      yourName: "Ваше имя *", city: "Город", reviewField: "Отзыв *", reviewPh: "Что вас тронуло, какой момент запомнился…",
+      sendReview: "Отправить отзыв", reviewThanks: "Спасибо! Ваш отзыв отправлен и появится после проверки.",
+      errName: "Укажите, пожалуйста, имя.", errShort: "Напишите, пожалуйста, хотя бы пару предложений.", errTooSoon: "Вы только что отправили отзыв. Попробуйте чуть позже.", errSend: "Не получилось отправить: ",
+      paywallTitle: "Продолжение — в полной версии",
+      payManualIn: "Нажмите кнопку — откроется WhatsApp с сообщением автору. После оплаты автор откроет вам все главы.",
+      payManualOut: "Зарегистрируйтесь на сайте, затем нажмите «Купить» — откроется WhatsApp с сообщением автору. После оплаты все главы откроются по вашему email.",
+      payAutoIn: "Купите книгу, и все главы откроются сразу после оплаты.", payAutoOut: "Войдите или зарегистрируйтесь, чтобы купить книгу. После оплаты все главы откроются сразу.",
+      buyFor: (p) => `Купить за ${p}`, toContents: "К содержанию", settings: "Настройки", textSize: "Размер текста", bg: "Фон",
+      back: "← Назад", next: "Дальше →", endOfBook: "Конец книги",
+      loginTitle: "Вход", signupTitle: "Регистрация", loginLead: "Войдите, чтобы читать купленные книги.", signupLead: "Создайте аккаунт — на этот email будет открыт доступ к купленным книгам.",
+      password: "Пароль", pwMin: " (минимум 6 символов)", signupBtn: "Зарегистрироваться",
+      forgot: "Забыли пароль или купили книгу на другой email?", writeAuthor: "Напишите автору", weHelp: " — поможем.",
+      errLogin: "Неверный email или пароль.", errExists: "Такой email уже зарегистрирован — перейдите на вкладку «Вход».", errPw: "Пароль слишком короткий — минимум 6 символов.", error: "Ошибка: ",
+      thanks: "Спасибо за покупку!", opening: "Открываем доступ к книге… Обычно это занимает несколько секунд.", read: "Читать", ready: "Готово! Книга открыта. Приятного чтения.",
+      paidNotOpen: (a) => `Оплата прошла, но доступ еще не открылся. Обновите страницу через минуту или ${a}.`, writeAuthorL: "напишите автору",
+      notFound: "Страница не найдена", home: "На главную", oops: "Что-то пошло не так",
+      buyMsg: (title, price, email) => `Здравствуйте, Венера!\n\nЯ хочу купить книгу «${title}»${price}.\nМой email на сайте: ${email}\n\nПодскажите, пожалуйста, варианты оплаты.\n\nСпасибо!`,
+      close: "Закрыть", buying: "Покупка книги", writeToAuthor: "Напишите автору",
+      buyLead: "Выберите мессенджер — сообщение уже готово. Венера ответит и подскажет удобный способ оплаты. После оплаты книга откроется по вашему email.",
+      writeWa: "Написать в WhatsApp", writeVb: "Написать в Viber",
+      vbNote: "Текст скопирован. В открывшемся чате Viber вставьте его: долгое нажатие → «Вставить» (на компьютере — Ctrl+V).",
+      loginFirst: "Сначала войдите или зарегистрируйтесь", noCopy: "Копирование и печать недоступны",
+    },
+    en: {
+      locale: "en-GB", siteName: "Books by Venera Khassanova", logoSub: "books", author: "Venera Khassanova",
+      admin: "Admin", logout: "Log out", login: "Log in",
+      demo: "Demo version: this is how the site will look. Login and payment are not real here.",
+      navBook: "The book", navAuthor: "About me", navReviews: "Reviews",
+      hello: "Hello, Venera!",
+      rights: "All rights reserved. Book texts are protected from copying.",
+      starsOf: (n) => `${n} out of 5`, books: "Books", bought: "purchased",
+      continueReading: "Continue reading", startReading: "Start reading", owned: "✓ This book is yours",
+      buyRead: "Buy and read", readFree: "Read a free excerpt ↗",
+      reviewsN: (n) => `${n} ${n === 1 ? "review" : "reviews"}`,
+      coverAlt: (t) => `Cover of “${t}”`, scrollDown: "SCROLL DOWN ↓",
+      aboutBook: "About the book", aboutTitle: "A story you won’t forget",
+      perk1: ["Online", "read on your phone, tablet or computer"], perk2: ["Forever", "the book stays in your account"], perk3: ["Bookmark", "the site remembers where you stopped"],
+      ebook: "E-book", free: "Free", q: (s) => `“${s}”`,
+      noteManual: "To buy, sign up and press “Buy” — WhatsApp will open so you can message me. Once you have paid, I will unlock the book for your email.",
+      noteAuto: "All chapters open right after payment.",
+      contents: "Contents", here: "you are here", freeTag: "free",
+      authorEyebrow: "The author", readersReviews: "Reader reviews", whatReaders: "What readers say",
+      noReviews: "No reviews yet — be the first to share your impressions.",
+      leaveReview: "Leave a review", reviewModeration: "Your review will appear after the author approves it.", rating: "Rating",
+      yourName: "Your name *", city: "City", reviewField: "Review *", reviewPh: "What touched you, which moment stayed with you…",
+      sendReview: "Send review", reviewThanks: "Thank you! Your review has been sent and will appear after approval.",
+      errName: "Please enter your name.", errShort: "Please write at least a couple of sentences.", errTooSoon: "You have just sent a review. Please try again a little later.", errSend: "Could not send: ",
+      paywallTitle: "Continue in the full version",
+      payManualIn: "Press the button — WhatsApp will open with a message to the author. After payment, the author will unlock all chapters for you.",
+      payManualOut: "Sign up on the site, then press “Buy” — WhatsApp will open with a message to the author. After payment, all chapters will open for your email.",
+      payAutoIn: "Buy the book and all chapters will open right after payment.", payAutoOut: "Log in or sign up to buy the book. All chapters open right after payment.",
+      buyFor: (p) => `Buy for ${p}`, toContents: "To contents", settings: "Settings", textSize: "Text size", bg: "Background",
+      back: "← Back", next: "Next →", endOfBook: "End of the book",
+      loginTitle: "Log in", signupTitle: "Sign up", loginLead: "Log in to read the books you have bought.", signupLead: "Create an account — the books you buy will be unlocked for this email.",
+      password: "Password", pwMin: " (at least 6 characters)", signupBtn: "Sign up",
+      forgot: "Forgot your password or bought the book with a different email?", writeAuthor: "Message the author", weHelp: " — we will help.",
+      errLogin: "Wrong email or password.", errExists: "This email is already registered — switch to the “Log in” tab.", errPw: "The password is too short — at least 6 characters.", error: "Error: ",
+      thanks: "Thank you for your purchase!", opening: "Unlocking the book… This usually takes a few seconds.", read: "Read", ready: "Done! The book is unlocked. Enjoy reading.",
+      paidNotOpen: (a) => `The payment went through, but access has not opened yet. Refresh the page in a minute or ${a}.`, writeAuthorL: "message the author",
+      notFound: "Page not found", home: "Home", oops: "Something went wrong",
+      buyMsg: (title, price, email) => `Hello, Venera!\n\nI would like to buy the book “${title}”${price}.\nMy email on the site: ${email}\n\nCould you please tell me the payment options?\n\nThank you!`,
+      close: "Close", buying: "Buying the book", writeToAuthor: "Message the author",
+      buyLead: "Choose a messenger — the message is ready. Venera will reply and suggest a convenient way to pay. After payment, the book will open for your email.",
+      writeWa: "Message on WhatsApp", writeVb: "Message on Viber",
+      vbNote: "The text has been copied. Paste it into the Viber chat that opens: long press → “Paste” (on a computer — Ctrl+V).",
+      loginFirst: "Please log in or sign up first", noCopy: "Copying and printing are disabled",
+    },
+    bg: {
+      locale: "bg-BG", siteName: "Книгите на Венера Хасанова", logoSub: "книги", author: "Венера Хасанова",
+      admin: "Админ", logout: "Изход", login: "Вход",
+      demo: "Демо версия: така ще изглежда сайтът. Входът и плащането тук не са истински.",
+      navBook: "За книгата", navAuthor: "За мен", navReviews: "Отзиви",
+      hello: "Здравейте, Венера!",
+      rights: "Всички права запазени. Текстът на книгите е защитен от копиране.",
+      starsOf: (n) => `${n} от 5`, books: "Книги", bought: "закупена",
+      continueReading: "Продължи четенето", startReading: "Започни да четеш", owned: "✓ Книгата е ваша",
+      buyRead: "Купи и чети", readFree: "Прочети откъс безплатно ↗",
+      reviewsN: (n) => `${n} ${n === 1 ? "отзив" : "отзива"}`,
+      coverAlt: (t) => `Корица на книгата „${t}“`, scrollDown: "ПРЕВЪРТЕТЕ НАДОЛУ ↓",
+      aboutBook: "За книгата", aboutTitle: "История, която не се забравя",
+      perk1: ["Онлайн", "четете на телефон, таблет или компютър"], perk2: ["Завинаги", "достъпът до книгата остава при вас"], perk3: ["Отметка", "сайтът помни докъде сте стигнали"],
+      ebook: "Електронна версия", free: "Безплатно", q: (s) => `„${s}“`,
+      noteManual: "За да купите, регистрирайте се и натиснете „Купи“ — ще се отвори WhatsApp, за да се свържете с мен. След плащането ще отключа книгата за вашия имейл.",
+      noteAuto: "След плащането всички глави се отварят веднага.",
+      contents: "Съдържание", here: "тук сте", freeTag: "безплатно",
+      authorEyebrow: "Авторът", readersReviews: "Отзиви на читатели", whatReaders: "Какво казват читателите",
+      noReviews: "Все още няма отзиви — бъдете първият, който ще сподели впечатленията си.",
+      leaveReview: "Оставете отзив", reviewModeration: "Отзивът ще се появи на сайта след проверка от автора.", rating: "Оценка",
+      yourName: "Вашето име *", city: "Град", reviewField: "Отзив *", reviewPh: "Какво ви докосна, кой момент ви остана в сърцето…",
+      sendReview: "Изпрати отзив", reviewThanks: "Благодаря! Отзивът ви е изпратен и ще се появи след проверка.",
+      errName: "Моля, напишете името си.", errShort: "Моля, напишете поне няколко изречения.", errTooSoon: "Току-що изпратихте отзив. Опитайте отново малко по-късно.", errSend: "Неуспешно изпращане: ",
+      paywallTitle: "Продължението е в пълната версия",
+      payManualIn: "Натиснете бутона — ще се отвори WhatsApp със съобщение до автора. След плащането авторът ще ви отключи всички глави.",
+      payManualOut: "Регистрирайте се в сайта, след това натиснете „Купи“ — ще се отвори WhatsApp със съобщение до автора. След плащането всички глави ще се отворят за вашия имейл.",
+      payAutoIn: "Купете книгата и всички глави ще се отворят веднага след плащането.", payAutoOut: "Влезте или се регистрирайте, за да купите книгата. След плащането всички глави се отварят веднага.",
+      buyFor: (p) => `Купи за ${p}`, toContents: "Към съдържанието", settings: "Настройки", textSize: "Размер на текста", bg: "Фон",
+      back: "← Назад", next: "Напред →", endOfBook: "Край на книгата",
+      loginTitle: "Вход", signupTitle: "Регистрация", loginLead: "Влезте, за да четете закупените книги.", signupLead: "Създайте профил — закупените книги ще се отключат за този имейл.",
+      password: "Парола", pwMin: " (поне 6 символа)", signupBtn: "Регистрирай се",
+      forgot: "Забравили сте паролата или сте купили книгата с друг имейл?", writeAuthor: "Пишете на автора", weHelp: " — ще помогнем.",
+      errLogin: "Грешен имейл или парола.", errExists: "Този имейл вече е регистриран — минете в раздел „Вход“.", errPw: "Паролата е твърде кратка — поне 6 символа.", error: "Грешка: ",
+      thanks: "Благодаря за покупката!", opening: "Отключваме книгата… Обикновено отнема няколко секунди.", read: "Чети", ready: "Готово! Книгата е отключена. Приятно четене.",
+      paidNotOpen: (a) => `Плащането е минало, но достъпът още не е отворен. Обновете страницата след минута или ${a}.`, writeAuthorL: "пишете на автора",
+      notFound: "Страницата не е намерена", home: "Към началото", oops: "Нещо се обърка",
+      buyMsg: (title, price, email) => `Здравейте, Венера!\n\nИскам да купя книгата „${title}“${price}.\nМоят имейл в сайта: ${email}\n\nМоля, кажете ми какви са вариантите за плащане.\n\nБлагодаря!`,
+      close: "Затвори", buying: "Покупка на книга", writeToAuthor: "Пишете на автора",
+      buyLead: "Изберете месинджър — съобщението е готово. Венера ще отговори и ще предложи удобен начин за плащане. След плащането книгата ще се отвори за вашия имейл.",
+      writeWa: "Пиши в WhatsApp", writeVb: "Пиши във Viber",
+      vbNote: "Текстът е копиран. Поставете го в отворения чат във Viber: задръжте пръст → „Постави“ (на компютър — Ctrl+V).",
+      loginFirst: "Първо влезте или се регистрирайте", noCopy: "Копирането и печатът са забранени",
+    },
+  };
+  function detectLang() {
+    const saved = store.get("lang", null); if (LANGS.includes(saved)) return saved;
+    const n = (navigator.language || "en").slice(0, 2).toLowerCase();
+    return n === "bg" ? "bg" : ["ru", "kk", "uk", "be", "ky", "uz"].includes(n) ? "ru" : "en";
+  }
+  let LANG = detectLang(), L = DICT[LANG];
+  function setLang(l) { if (!LANGS.includes(l)) return; LANG = l; L = DICT[l]; store.set("lang", l); applyLangMeta(); route(); }
+  function applyLangMeta() { document.documentElement.lang = LANG; document.title = L.siteName; }
+  const langSwitch = () => `<div class="lang">${LANGS.map((l) => `<button class="${l === LANG ? "on" : ""}" data-lang="${l}">${l.toUpperCase()}</button>`).join("")}</div>`;
+  // Язык книги (по id): книги показываются всем, но на своей странице сортируются первыми
+  const bookLang = (b) => b.lang || (/-en$/.test(b.id) ? "en" : /-bg$/.test(b.id) ? "bg" : "ru");
+
   /* ================= Данные ================= */
   function supaApi() {
     const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY, {
@@ -108,22 +257,22 @@
   };
   function topbar(transparent) {
     const user = SESSION
-      ? `${ADMIN ? `<a class="nav-a" href="#/admin">Админка</a>` : ""}<button class="nav-a" data-act="logout" title="${esc(SESSION.user.email)}">Выйти</button>`
-      : `<a class="nav-a" href="#/login">Войти</a>`;
-    return `${DEMO ? `<div class="demo-banner">Демо-версия: так будет выглядеть сайт. Вход и оплата здесь не настоящие.</div>` : ""}
-      <header class="site-head ${transparent ? "on-hero" : ""}"><a class="logo" href="#/">VENI<span>книги</span></a>
-      <nav class="nav"><button class="nav-a hide-m" data-scroll="book">О книге</button><button class="nav-a hide-m" data-scroll="author">Кто я</button>
-      <button class="nav-a hide-m" data-scroll="reviews">Отзывы</button>${user}</nav></header>`;
+      ? `${ADMIN ? `<a class="nav-a" href="#/admin">${L.admin}</a>` : ""}<button class="nav-a" data-act="logout" title="${esc(SESSION.user.email)}">${L.logout}</button>`
+      : `<a class="nav-a" href="#/login">${L.login}</a>`;
+    return `${DEMO ? `<div class="demo-banner">${L.demo}</div>` : ""}
+      <header class="site-head ${transparent ? "on-hero" : ""}"><a class="logo" href="#/">VENI<span>${L.logoSub}</span></a>
+      <nav class="nav"><button class="nav-a hide-m" data-scroll="book">${L.navBook}</button><button class="nav-a hide-m" data-scroll="author">${L.navAuthor}</button>
+      <button class="nav-a hide-m" data-scroll="reviews">${L.navReviews}</button>${langSwitch()}${user}</nav></header>`;
   }
   const floating = () => `<div class="fab">
-      <a class="fab-b wa" href="${waUrl("Здравствуйте, Венера!")}" target="_blank" rel="noopener" aria-label="WhatsApp">${IC.wa}</a>
+      <a class="fab-b wa" href="${waUrl(L.hello)}" target="_blank" rel="noopener" aria-label="WhatsApp">${IC.wa}</a>
       <a class="fab-b vb" href="${viberUrl()}" aria-label="Viber">${IC.vb}</a></div>`;
   const foot = () => `<footer class="site-foot"><div class="foot-in">
-      <div><div class="logo dark">VENI<span>книги</span></div><p class="muted">© ${new Date().getFullYear()} Венера Хасанова. Все права защищены. Текст книг защищен от копирования.</p></div>
+      <div><div class="logo dark">VENI<span>${L.logoSub}</span></div><p class="muted">© ${new Date().getFullYear()} ${L.author}. ${L.rights}</p></div>
       <div class="foot-links"><a href="${waUrl()}" target="_blank" rel="noopener">WhatsApp</a><a href="${viberUrl()}">Viber</a>
       ${CFG.CONTACT_EMAIL ? `<a href="mailto:${esc(CFG.CONTACT_EMAIL)}">${esc(CFG.CONTACT_EMAIL)}</a>` : ""}<a href="https://venihomes.eu/" target="_blank" rel="noopener">venihomes.eu</a></div>
     </div></footer>` + floating();
-  const stars = (n) => `<span class="stars" aria-label="${n} из 5">${"★".repeat(n)}<i>${"★".repeat(5 - n)}</i></span>`;
+  const stars = (n) => `<span class="stars" aria-label="${L.starsOf(n)}">${"★".repeat(n)}<i>${"★".repeat(5 - n)}</i></span>`;
   function parseTitle(t) {
     const m = /^((?:Глава|Chapter)\s+\d+)\s*[:.]\s*(.+)$/.exec(t || "");
     return m ? { kicker: m[1], name: m[2] } : { kicker: "", name: t };
@@ -131,12 +280,12 @@
 
   /* ================= Страницы ================= */
   async function pageLibrary() {
-    const books = await api.books();
+    const books = (await api.books()).slice().sort((a, b) => { const w = (x) => (bookLang(x) === LANG ? 0 : bookLang(x) === "ru" ? 1 : 2); return w(a) - w(b) || (a.sort || 0) - (b.sort || 0); });
     if (books.length === 1) return pageBook(books[0].id);
     document.body.className = "";
-    $app.innerHTML = topbar() + `<div class="section"><h2>Книги</h2><div class="library">${books.map((b) => `
+    $app.innerHTML = topbar() + `<div class="section"><h2>${L.books}</h2><div class="library">${books.map((b) => `
       <a class="lib-card" href="#/book/${esc(b.id)}"><img src="${esc(b.cover_url)}" alt=""><div class="lt">${esc(b.title)}</div>
-      <div class="ls">${esc(b.subtitle || "")}${ACCESS.has(b.id) ? " · куплено" : ""}</div></a>`).join("")}</div></div>` + foot();
+      <div class="ls">${esc(b.subtitle || "")}${ACCESS.has(b.id) ? " · " + L.bought : ""}</div></a>`).join("")}</div></div>` + foot();
   }
 
   async function pageBook(id) {
@@ -150,7 +299,7 @@
     const startIdx = last ?? (toc[0] ? toc[0].idx : 0);
     const paras = String(b.description || "").split("\n").filter(Boolean);
     const freeNames = toc.filter((c) => c.free).map((c) => parseTitle(c.title));
-    const A = CFG.AUTHOR || {};
+    const A0 = CFG.AUTHOR || {}, A = A0[LANG] || A0.ru || A0;
     const avg = reviews.length ? (reviews.reduce((a, r) => a + (r.rating || 5), 0) / reviews.length) : 0;
     $app.innerHTML = topbar(true) + `
       <section class="hero">
@@ -161,64 +310,62 @@
             <h1>${esc(b.title)}</h1>
             <p class="lead">${esc(paras[0] || "")}</p>
             <div class="cta">${owned
-              ? `<a class="primary" href="#/read/${esc(id)}/${startIdx}">${last != null ? "Продолжить чтение" : "Начать читать"}</a><span class="owned">✓ Книга ваша</span>`
-              : `<button class="primary" data-act="buy" data-book="${esc(id)}">Купить и читать · ${esc(b.price_label || "")}</button>
-                 ${firstFree ? `<a class="ghost-l" href="#/read/${esc(id)}/${firstFree.idx}">Читать отрывок бесплатно ↗</a>` : ""}`}
+              ? `<a class="primary" href="#/read/${esc(id)}/${startIdx}">${last != null ? L.continueReading : L.startReading}</a><span class="owned">${L.owned}</span>`
+              : `<button class="primary" data-act="buy" data-book="${esc(id)}">${L.buyRead} · ${esc(b.price_label || "")}</button>
+                 ${firstFree ? `<a class="ghost-l" href="#/read/${esc(id)}/${firstFree.idx}">${L.readFree}</a>` : ""}`}
             </div>
-            ${reviews.length ? `<div class="hero-rating">${stars(Math.round(avg))} <span>${avg.toFixed(1)} · ${reviews.length} ${plural(reviews.length, "отзыв", "отзыва", "отзывов")}</span></div>` : ""}
+            ${reviews.length ? `<div class="hero-rating">${stars(Math.round(avg))} <span>${avg.toFixed(1)} · ${L.reviewsN(reviews.length)}</span></div>` : ""}
           </div>
-          <img class="cover" src="${esc(b.cover_url)}" alt="Обложка книги «${esc(b.title)}»">
+          <img class="cover" src="${esc(b.cover_url)}" alt="${esc(L.coverAlt(b.title))}">
         </div>
-        <button class="down" data-scroll="book">ЛИСТАЙТЕ ВНИЗ ↓</button>
+        <button class="down" data-scroll="book">${L.scrollDown}</button>
       </section>
       <main>
         <section class="block" id="book">
           <div class="two">
-            <div><span class="small gold">О книге</span><h2>История, которую нельзя забыть</h2>
+            <div><span class="small gold">${L.aboutBook}</span><h2>${L.aboutTitle}</h2>
               ${paras.slice(1).map((p) => `<p class="muted big">${esc(p)}</p>`).join("")}
-              <ul class="perks"><li><b>Онлайн</b><span>читайте на телефоне, планшете или компьютере</span></li>
-                <li><b>Навсегда</b><span>доступ к книге остается у вас</span></li>
-                <li><b>Закладка</b><span>сайт помнит, где вы остановились</span></li></ul>
-              ${owned ? "" : `<div class="buy-box"><div><span class="small">Электронная версия</span><div class="price">${esc(b.price_label || "")}</div></div>
-                <button class="primary" data-act="buy" data-book="${esc(id)}">Купить и читать</button></div>
-                <p class="note">${freeNames.length ? `Бесплатно: ${freeNames.map((t) => esc(t.kicker ? t.kicker + " «" + t.name + "»" : t.name)).join(", ")}. ` : ""}${MANUAL_PAY(id) ? "Чтобы купить, зарегистрируйтесь и нажмите «Купить» — откроется WhatsApp для связи со мной. После оплаты я открою вам книгу по email." : "После оплаты все главы откроются сразу."}</p>`}
+              <ul class="perks">${[L.perk1, L.perk2, L.perk3].map((p) => `<li><b>${p[0]}</b><span>${p[1]}</span></li>`).join("")}</ul>
+              ${owned ? "" : `<div class="buy-box"><div><span class="small">${L.ebook}</span><div class="price">${esc(b.price_label || "")}</div></div>
+                <button class="primary" data-act="buy" data-book="${esc(id)}">${L.buyRead}</button></div>
+                <p class="note">${freeNames.length ? `${L.free}: ${freeNames.map((t) => esc(t.kicker ? t.kicker + " " + L.q(t.name) : t.name)).join(", ")}. ` : ""}${MANUAL_PAY(id) ? L.noteManual : L.noteAuto}</p>`}
             </div>
-            <div><span class="small gold">Содержание</span>
+            <div><span class="small gold">${L.contents}</span>
               <ol class="toc">${toc.map((c) => {
                 const t = parseTitle(c.title), open = owned || c.free;
-                return `<li class="${open ? "" : "locked"}"><a href="#/read/${esc(id)}/${c.idx}"><span class="num">${esc(t.kicker ? t.kicker.replace("Глава ", "") : "—")}</span>
-                  <span class="t">${esc(t.name)}</span>${last === c.idx ? `<span class="here">вы здесь</span>` : ""}
-                  ${!owned && c.free ? `<span class="tag">бесплатно</span>` : ""}${open ? "" : `<span class="lock">🔒</span>`}</a></li>`;
+                return `<li class="${open ? "" : "locked"}"><a href="#/read/${esc(id)}/${c.idx}"><span class="num">${esc(t.kicker ? t.kicker.replace(/^(Глава|Chapter)\s+/, "") : "—")}</span>
+                  <span class="t">${esc(t.name)}</span>${last === c.idx ? `<span class="here">${L.here}</span>` : ""}
+                  ${!owned && c.free ? `<span class="tag">${L.freeTag}</span>` : ""}${open ? "" : `<span class="lock">🔒</span>`}</a></li>`;
               }).join("")}</ol></div>
           </div>
         </section>
 
         <section class="about" id="author">
-          ${A.photo ? `<img class="portrait" src="${esc(A.photo)}" alt="Венера Хасанова">` : ""}
-          <div><span class="small gold">${esc(A.eyebrow || "Автор")}</span><h2>${esc(A.title || "Венера Хасанова")}</h2>
+          ${(A0.photo || A.photo) ? `<img class="portrait" src="${esc(A0.photo || A.photo)}" alt="${esc(L.author)}">` : ""}
+          <div><span class="small gold">${esc(A.eyebrow || L.authorEyebrow)}</span><h2>${esc(A.title || L.author)}</h2>
             ${(A.text || []).map((p) => `<p class="muted">${esc(p)}</p>`).join("")}
             ${(A.facts || []).length ? `<ul class="about-list">${A.facts.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
-            <div class="cta"><a class="primary wa-btn" href="${waUrl("Здравствуйте, Венера!")}" target="_blank" rel="noopener">${IC.wa} WhatsApp</a>
+            <div class="cta"><a class="primary wa-btn" href="${waUrl(L.hello)}" target="_blank" rel="noopener">${IC.wa} WhatsApp</a>
               <a class="primary vb-btn" href="${viberUrl()}">${IC.vb} Viber</a></div>
           </div>
         </section>
 
         <section class="block" id="reviews">
-          <div class="rev-head"><div><span class="small gold">Отзывы читателей</span><h2>Что говорят читатели</h2></div>
-            ${reviews.length ? `<div class="rev-avg"><b>${avg.toFixed(1)}</b>${stars(Math.round(avg))}<span>${reviews.length} ${plural(reviews.length, "отзыв", "отзыва", "отзывов")}</span></div>` : ""}</div>
+          <div class="rev-head"><div><span class="small gold">${L.readersReviews}</span><h2>${L.whatReaders}</h2></div>
+            ${reviews.length ? `<div class="rev-avg"><b>${avg.toFixed(1)}</b>${stars(Math.round(avg))}<span>${L.reviewsN(reviews.length)}</span></div>` : ""}</div>
           <div class="rev-grid">${reviews.length ? reviews.map((r) => `<article class="rev">${stars(r.rating || 5)}<p>${esc(r.body)}</p>
-              <div class="rev-by"><b>${esc(r.name)}</b>${r.city ? ` · ${esc(r.city)}` : ""}<span>${esc(new Date(r.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }))}</span></div></article>`).join("")
-            : `<p class="muted">Отзывов пока нет — станьте первым, кто поделится впечатлениями.</p>`}</div>
+              <div class="rev-by"><b>${esc(r.name)}</b>${r.city ? ` · ${esc(r.city)}` : ""}<span>${esc(new Date(r.created_at).toLocaleDateString(L.locale, { day: "numeric", month: "long", year: "numeric" }))}</span></div></article>`).join("")
+            : `<p class="muted">${L.noReviews}</p>`}</div>
           <form class="rev-form" id="revForm" novalidate>
-            <h3>Оставить отзыв</h3><p class="muted">Отзыв появится на сайте после проверки автором.</p>
-            <div class="rate" role="radiogroup" aria-label="Оценка">${[5, 4, 3, 2, 1].map((n) => `<input type="radio" name="rating" id="r${n}" value="${n}" ${n === 5 ? "checked" : ""}><label for="r${n}" title="${n}">★</label>`).join("")}</div>
-            <div class="f2"><label class="field"><span>Ваше имя *</span><input name="name" maxlength="60" required></label>
-              <label class="field"><span>Город</span><input name="city" maxlength="60"></label></div>
-            <label class="field"><span>Отзыв *</span><textarea name="body" rows="5" maxlength="2000" required placeholder="Что вас тронуло, какой момент запомнился…"></textarea></label>
+            <h3>${L.leaveReview}</h3><p class="muted">${L.reviewModeration}</p>
+            <div class="rate" role="radiogroup" aria-label="${L.rating}">${[5, 4, 3, 2, 1].map((n) => `<input type="radio" name="rating" id="r${n}" value="${n}" ${n === 5 ? "checked" : ""}><label for="r${n}" title="${n}">★</label>`).join("")}</div>
+            <div class="f2"><label class="field"><span>${L.yourName}</span><input name="name" maxlength="60" required></label>
+              <label class="field"><span>${L.city}</span><input name="city" maxlength="60"></label></div>
+            <label class="field"><span>${L.reviewField}</span><textarea name="body" rows="5" maxlength="2000" required placeholder="${L.reviewPh}"></textarea></label>
             <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <div class="err" id="revErr"></div>
-            <button class="primary" type="submit">Отправить отзыв</button>
-            <p class="form-ok" id="revOk" hidden>Спасибо! Ваш отзыв отправлен и появится после проверки.</p>
+            <button class="primary" type="submit">${L.sendReview}</button>
+            <p class="form-ok" id="revOk" hidden>${L.reviewThanks}</p>
           </form>
         </section>
       </main>` + foot();
@@ -229,17 +376,17 @@
       err.textContent = "";
       if (fd.get("website")) return;
       const name = String(fd.get("name") || "").trim(), body = String(fd.get("body") || "").trim();
-      if (!name) { err.textContent = "Укажите, пожалуйста, имя."; return; }
-      if (body.length < 10) { err.textContent = "Напишите, пожалуйста, хотя бы пару предложений."; return; }
+      if (!name) { err.textContent = L.errName; return; }
+      if (body.length < 10) { err.textContent = L.errShort; return; }
       const lastSent = store.get("rev_sent", 0);
-      if (Date.now() - lastSent < 60000) { err.textContent = "Вы только что отправили отзыв. Попробуйте чуть позже."; return; }
+      if (Date.now() - lastSent < 60000) { err.textContent = L.errTooSoon; return; }
       btn.disabled = true;
       try {
         await api.addReview({ book_id: id, name, city: String(fd.get("city") || "").trim() || null, rating: Number(fd.get("rating") || 5), body });
         store.set("rev_sent", Date.now());
         f.querySelectorAll(".field,.rate,.f2,button[type=submit]").forEach((x) => (x.style.display = "none"));
         document.getElementById("revOk").hidden = false;
-      } catch (ex) { err.textContent = "Не получилось отправить: " + (ex.message || ex); btn.disabled = false; }
+      } catch (ex) { err.textContent = L.errSend + (ex.message || ex); btn.disabled = false; }
     };
   }
   function plural(n, one, few, many) {
@@ -264,22 +411,22 @@
       body = ch.body.split("\n").filter((p) => p.trim()).map((p, i) =>
         `<p class="${i === 0 ? "first" : ""}${/^[—“"]/.test(p.trim()) ? " dlg" : ""}">${esc(p).replace(/\*([^*]+)\*/g, "<em>$1</em>")}</p>`).join("");
     } else {
-      body = `<div class="paywall"><h3>Продолжение — в полной версии</h3>
+      body = `<div class="paywall"><h3>${L.paywallTitle}</h3>
         <p>${MANUAL_PAY(id)
-          ? (SESSION ? "Нажмите кнопку — откроется WhatsApp с сообщением автору. После оплаты автор откроет вам все главы." : "Зарегистрируйтесь на сайте, затем нажмите «Купить» — откроется WhatsApp с сообщением автору. После оплаты все главы откроются по вашему email.")
-          : (SESSION ? "Купите книгу, и все главы откроются сразу после оплаты." : "Войдите или зарегистрируйтесь, чтобы купить книгу. После оплаты все главы откроются сразу.")}</p>
-        <button class="btn btn-fire" data-act="buy" data-book="${esc(id)}">Купить за ${esc(b.price_label || "")}</button></div>`;
+          ? (SESSION ? L.payManualIn : L.payManualOut)
+          : (SESSION ? L.payAutoIn : L.payAutoOut)}</p>
+        <button class="btn btn-fire" data-act="buy" data-book="${esc(id)}">${esc(L.buyFor(b.price_label || ""))}</button></div>`;
     }
     const wm = SESSION ? watermark(SESSION.user.email) : "";
     $app.innerHTML = `<div class="progress" id="prog"></div>
       <div class="reader ${theme === "light" ? "" : theme}" id="reader" style="--fs:${fs}px">
-        <div class="rbar"><a class="icon-btn" href="#/book/${esc(id)}" title="К содержанию">←</a>
+        <div class="rbar"><a class="icon-btn" href="#/book/${esc(id)}" title="${L.toContents}">←</a>
           <div class="ttl">${esc(b.title)}</div>
-          <button class="icon-btn" data-act="settings" title="Настройки">Aa</button></div>
+          <button class="icon-btn" data-act="settings" title="${L.settings}">Aa</button></div>
         <div class="settings" id="settings" hidden>
-          <div class="lbl">Размер текста</div>
+          <div class="lbl">${L.textSize}</div>
           <div class="row"><button data-fs="-1">A−</button><button data-fs="1">A+</button></div>
-          <div class="lbl">Фон</div>
+          <div class="lbl">${L.bg}</div>
           <div class="row">
             <button data-theme="light" class="${theme === "light" ? "on" : ""}"><span class="sw" style="background:#fbf6ee"></span></button>
             <button data-theme="sepia" class="${theme === "sepia" ? "on" : ""}"><span class="sw" style="background:#f1e4cc"></span></button>
@@ -290,8 +437,8 @@
           <h1 class="ch-title">${esc(t.name)}</h1><span class="ch-orn">✦ ✦ ✦</span>
           <div class="text">${body}</div>
           <nav class="ch-nav">
-            ${prev ? `<a href="#/read/${esc(id)}/${prev.idx}"><small>← Назад</small>${esc(parseTitle(prev.title).name)}</a>` : `<span></span>`}
-            ${next ? `<a class="next" href="#/read/${esc(id)}/${next.idx}"><small>Дальше →</small>${esc(parseTitle(next.title).name)}</a>` : `<a class="next" href="#/book/${esc(id)}"><small>Конец книги</small>К содержанию</a>`}
+            ${prev ? `<a href="#/read/${esc(id)}/${prev.idx}"><small>${L.back}</small>${esc(parseTitle(prev.title).name)}</a>` : `<span></span>`}
+            ${next ? `<a class="next" href="#/read/${esc(id)}/${next.idx}"><small>${L.next}</small>${esc(parseTitle(next.title).name)}</a>` : `<a class="next" href="#/book/${esc(id)}"><small>${L.endOfBook}</small>${L.toContents}</a>`}
           </nav></article></div>`;
     window.scrollTo(0, 0);
     const prog = document.getElementById("prog");
@@ -312,14 +459,14 @@
     let mode = "in";
     const render = () => {
       $app.innerHTML = topbar() + `<div class="panel">
-        <h1>${mode === "in" ? "Вход" : "Регистрация"}</h1>
-        <p class="lead">${mode === "in" ? "Войдите, чтобы читать купленные книги." : "Создайте аккаунт — на этот email будет открыт доступ к купленным книгам."}</p>
-        <div class="tabs"><button data-mode="in" class="${mode === "in" ? "on" : ""}">Вход</button><button data-mode="up" class="${mode === "up" ? "on" : ""}">Регистрация</button></div>
+        <h1>${mode === "in" ? L.loginTitle : L.signupTitle}</h1>
+        <p class="lead">${mode === "in" ? L.loginLead : L.signupLead}</p>
+        <div class="tabs"><button data-mode="in" class="${mode === "in" ? "on" : ""}">${L.loginTitle}</button><button data-mode="up" class="${mode === "up" ? "on" : ""}">${L.signupTitle}</button></div>
         <form id="f"><label class="field"><span>Email</span><input name="email" type="email" required autocomplete="email"></label>
-        <label class="field"><span>Пароль${mode === "up" ? " (минимум 6 символов)" : ""}</span><input name="pw" type="password" required minlength="6" autocomplete="${mode === "in" ? "current-password" : "new-password"}"></label>
+        <label class="field"><span>${L.password}${mode === "up" ? L.pwMin : ""}</span><input name="pw" type="password" required minlength="6" autocomplete="${mode === "in" ? "current-password" : "new-password"}"></label>
         <div class="err" id="err"></div>
-        <button class="btn btn-fire full" type="submit">${mode === "in" ? "Войти" : "Зарегистрироваться"}</button></form>
-        <p class="small" style="margin-top:16px">Забыли пароль или купили книгу на другой email? ${CFG.CONTACT_WHATSAPP ? `<a href="https://wa.me/${esc(CFG.CONTACT_WHATSAPP)}" target="_blank" rel="noopener">Напишите автору</a>` : "Напишите автору"} — поможем.</p></div>` + foot();
+        <button class="btn btn-fire full" type="submit">${mode === "in" ? L.login : L.signupBtn}</button></form>
+        <p class="small" style="margin-top:16px">${L.forgot} ${CFG.CONTACT_WHATSAPP ? `<a href="https://wa.me/${esc(CFG.CONTACT_WHATSAPP)}" target="_blank" rel="noopener">${L.writeAuthor}</a>` : L.writeAuthor}${L.weHelp}</p></div>` + foot();
       $app.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => { mode = b.dataset.mode; render(); }));
       document.getElementById("f").onsubmit = async (e) => {
         e.preventDefault();
@@ -332,9 +479,9 @@
           location.hash = next || "#/";
         } catch (ex) {
           const m = String(ex.message || ex);
-          err.textContent = /Invalid login/i.test(m) ? "Неверный email или пароль." :
-            /already registered|already exists/i.test(m) ? "Такой email уже зарегистрирован — перейдите на вкладку «Вход»." :
-            /Password should/i.test(m) ? "Пароль слишком короткий — минимум 6 символов." : "Ошибка: " + m;
+          err.textContent = /Invalid login/i.test(m) ? L.errLogin :
+            /already registered|already exists/i.test(m) ? L.errExists :
+            /Password should/i.test(m) ? L.errPw : L.error + m;
           btn.disabled = false;
         }
       };
@@ -344,18 +491,18 @@
 
   async function pageThanks(id) {
     document.body.className = "";
-    $app.innerHTML = topbar() + `<div class="panel"><h1>Спасибо за покупку!</h1>
-      <p class="lead" id="msg">Открываем доступ к книге… Обычно это занимает несколько секунд.</p>
-      <a class="btn btn-fire full" id="go" href="#/book/${esc(id)}" style="display:none">Читать</a></div>` + foot();
+    $app.innerHTML = topbar() + `<div class="panel"><h1>${L.thanks}</h1>
+      <p class="lead" id="msg">${L.opening}</p>
+      <a class="btn btn-fire full" id="go" href="#/book/${esc(id)}" style="display:none">${L.read}</a></div>` + foot();
     for (let i = 0; i < 25; i++) {
       await refreshUser();
       if (ACCESS.has(id)) {
-        document.getElementById("msg").textContent = "Готово! Книга открыта. Приятного чтения.";
+        document.getElementById("msg").textContent = L.ready;
         document.getElementById("go").style.display = "flex"; return;
       }
       await new Promise((r) => setTimeout(r, 3000));
     }
-    document.getElementById("msg").innerHTML = `Оплата прошла, но доступ еще не открылся. Обновите страницу через минуту или ${CFG.CONTACT_WHATSAPP ? `<a href="https://wa.me/${esc(CFG.CONTACT_WHATSAPP)}" target="_blank">напишите автору</a>` : "напишите автору"}.`;
+    document.getElementById("msg").innerHTML = L.paidNotOpen(CFG.CONTACT_WHATSAPP ? `<a href="https://wa.me/${esc(CFG.CONTACT_WHATSAPP)}" target="_blank">${L.writeAuthorL}</a>` : L.writeAuthorL);
   }
 
   async function pageAdmin() {
@@ -380,7 +527,7 @@
       <div class="card"><h2>Читатели</h2>${list.length ? `<table class="list"><tr><th>Email</th><th>Книга</th><th>Как</th><th>Дата</th><th></th></tr>
         ${list.map((r) => `<tr><td>${esc(r.email)}</td><td>${esc(bookName(r.book_id))}</td><td><span class="pill">${r.source === "stripe" ? "Stripe" : "вручную"}</span></td>
           <td>${esc(new Date(r.created_at).toLocaleDateString("ru-RU"))}</td>
-          <td style="white-space:nowrap"><a class="btn btn-ghost btn-small" title="Отправить письмо" target="_blank" rel="noopener" href="${mailLink(r.email, bookName(r.book_id))}">✉</a>
+          <td style="white-space:nowrap"><a class="btn btn-ghost btn-small" title="Отправить письмо" target="_blank" rel="noopener" href="${mailLink(r.email, bookName(r.book_id), r.book_id)}">✉</a>
           <button class="btn btn-ghost btn-small" data-act="revoke" data-email="${esc(r.email)}" data-book="${esc(r.book_id)}">Закрыть</button></td></tr>`).join("")}</table>`
         : `<p class="small">Пока никого нет.</p>`}</div>
       <div class="card" id="mod"><h2>Отзывы на проверке ${pending.length ? `<span class="badge">${pending.length}</span>` : ""}</h2>
@@ -402,7 +549,7 @@
         const box = document.getElementById("sent");
         box.hidden = false;
         box.innerHTML = `<b>Доступ для ${esc(email)} открыт.</b> Отправьте читателю письмо с инструкцией:
-          <a class="btn btn-fire btn-small" target="_blank" rel="noopener" href="${mailLink(email, bookName(book))}">✉ Отправить письмо читателю</a>`;
+          <a class="btn btn-fire btn-small" target="_blank" rel="noopener" href="${mailLink(email, bookName(book), book)}">✉ Отправить письмо читателю</a>`;
         box.scrollIntoView({ behavior: "smooth", block: "center" });
       } catch (ex) { toast("Ошибка: " + ex.message); }
     };
@@ -415,10 +562,28 @@
   }
 
 
-  function mailLink(email, bookTitle) {
+  function mailLink(email, bookTitle, bookId) {
     const site = location.origin + location.pathname;
-    const subject = `Доступ к книге «${bookTitle}» открыт`;
-    const body = `Здравствуйте!
+    const wa = CFG.CONTACT_WHATSAPP ? "+" + CFG.CONTACT_WHATSAPP : "";
+    const en = /-en$/.test(bookId || "");
+    const subject = en ? `Your access to “${bookTitle}” is open` : `Доступ к книге «${bookTitle}» открыт`;
+    const body = en ? `Hello!
+
+Thank you for choosing “${bookTitle}”. Your access is now open.
+
+How to start reading:
+1. Open the site: ${site}
+2. Press “Log in” → “Sign up” and register with this email: ${email}
+   (if you are already registered, simply log in).
+   You can switch the site language at the top: RU / EN / BG.
+3. Press “Start reading”.
+
+The book is read online from your phone or computer, and the site remembers where you stopped.
+
+Enjoy reading! If you have any questions, just reply to this email${wa ? " or message me on WhatsApp: " + wa : ""}.
+
+Warmly,
+Venera Khassanova` : `Здравствуйте!
 
 Спасибо, что выбрали книгу «${bookTitle}». Доступ для вас открыт.
 
@@ -430,7 +595,7 @@
 
 Книга читается онлайн с телефона или компьютера, а сайт запоминает место, где вы остановились.
 
-Приятного чтения! Если будут вопросы — просто ответьте на это письмо${CFG.CONTACT_WHATSAPP ? " или напишите мне в WhatsApp: +" + CFG.CONTACT_WHATSAPP : ""}.
+Приятного чтения! Если будут вопросы — просто ответьте на это письмо${wa ? " или напишите мне в WhatsApp: " + wa : ""}.
 
 С теплом,
 Венера Хасанова`;
@@ -440,7 +605,7 @@
 
   function pageNotFound() {
     document.body.className = "";
-    $app.innerHTML = topbar() + `<div class="panel"><h1>Страница не найдена</h1><a class="btn btn-fire full" href="#/">На главную</a></div>`;
+    $app.innerHTML = topbar() + `<div class="panel"><h1>${L.notFound}</h1><a class="btn btn-fire full" href="#/">${L.home}</a></div>`;
   }
 
   /* ================= Покупка ================= */
@@ -448,24 +613,17 @@
   async function buyDialog(bookId) {
     const b = await api.book(bookId).catch(() => null);
     const title = b ? b.title : bookId, price = b && b.price_label ? ` (${b.price_label})` : "";
-    const msg = `Здравствуйте, Венера!
-
-Я хочу купить книгу «${title}»${price}.
-Мой email на сайте: ${SESSION.user.email}
-
-Подскажите, пожалуйста, варианты оплаты.
-
-Спасибо!`;
+    const msg = L.buyMsg(title, price, SESSION.user.email);
     const d = document.createElement("div");
     d.className = "modal-wrap";
     d.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
-        <button class="m-close" aria-label="Закрыть">✕</button>
-        <span class="small gold">Покупка книги</span><h3 id="mTitle">Напишите автору</h3>
-        <p class="muted">Выберите мессенджер — сообщение уже готово. Венера ответит и подскажет удобный способ оплаты. После оплаты книга откроется по вашему email.</p>
+        <button class="m-close" aria-label="${L.close}">✕</button>
+        <span class="small gold">${L.buying}</span><h3 id="mTitle">${L.writeToAuthor}</h3>
+        <p class="muted">${L.buyLead}</p>
         <pre class="m-msg">${esc(msg)}</pre>
-        <div class="m-btns"><a class="primary wa-btn" href="https://wa.me/${esc(CFG.CONTACT_WHATSAPP)}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${IC.wa} Написать в WhatsApp</a>
-          <button class="primary vb-btn" data-vb>${IC.vb} Написать в Viber</button></div>
-        <p class="note" id="vbNote" hidden>Текст скопирован. В открывшемся чате Viber вставьте его: долгое нажатие → «Вставить» (на компьютере — Ctrl+V).</p>
+        <div class="m-btns"><a class="primary wa-btn" href="https://wa.me/${esc(CFG.CONTACT_WHATSAPP)}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${IC.wa} ${L.writeWa}</a>
+          <button class="primary vb-btn" data-vb>${IC.vb} ${L.writeVb}</button></div>
+        <p class="note" id="vbNote" hidden>${L.vbNote}</p>
       </div>`;
     document.body.appendChild(d);
     const close = () => d.remove();
@@ -478,7 +636,7 @@
   }
 
   async function buy(bookId) {
-    if (!SESSION) { toast("Сначала войдите или зарегистрируйтесь"); location.hash = "#/login?next=" + encodeURIComponent("#/book/" + bookId); return; }
+    if (!SESSION) { toast(L.loginFirst); location.hash = "#/login?next=" + encodeURIComponent("#/book/" + bookId); return; }
     const link = (CFG.PAYMENT_LINKS || {})[bookId];
     if (!link || DEMO) return buyDialog(bookId);
     const u = new URL(link);
@@ -504,13 +662,14 @@
       pageNotFound();
     } catch (e) {
       console.error(e);
-      $app.innerHTML = topbar() + `<div class="panel"><h1>Что-то пошло не так</h1><p class="lead">${esc(e.message || e)}</p><a class="btn btn-fire full" href="#/">На главную</a></div>`;
+      $app.innerHTML = topbar() + `<div class="panel"><h1>${L.oops}</h1><p class="lead">${esc(e.message || e)}</p><a class="btn btn-fire full" href="#/">${L.home}</a></div>`;
     }
   }
 
   document.addEventListener("click", async (e) => {
     const sc = e.target.closest("[data-scroll]");
     if (sc) { const el = document.getElementById(sc.dataset.scroll); if (el) el.scrollIntoView({ behavior: "smooth" }); else { location.hash = "#/"; setTimeout(() => { const x = document.getElementById(sc.dataset.scroll); if (x) x.scrollIntoView({ behavior: "smooth" }); }, 700); } return; }
+    const lb = e.target.closest("[data-lang]"); if (lb) { setLang(lb.dataset.lang); return; }
     const a = e.target.closest("[data-act],[data-fs],[data-theme]"); if (!a) return;
     if (a.dataset.act === "logout") { await api.signOut(); await refreshUser(); location.hash = "#/"; route(); }
     else if (a.dataset.act === "buy") buy(a.dataset.book);
@@ -535,7 +694,7 @@
     document.addEventListener(ev, (e) => { if (e.target.closest && e.target.closest(".reader") && !e.target.closest("input,textarea")) e.preventDefault(); }));
   document.addEventListener("keydown", (e) => {
     const k = e.key.toLowerCase();
-    if ((e.ctrlKey || e.metaKey) && ["c", "x", "p", "s", "a", "u"].includes(k) && document.getElementById("reader")) { e.preventDefault(); toast("Копирование и печать недоступны"); }
+    if ((e.ctrlKey || e.metaKey) && ["c", "x", "p", "s", "a", "u"].includes(k) && document.getElementById("reader")) { e.preventDefault(); toast(L.noCopy); }
   });
 
   // Возврат со страницы оплаты Stripe: ?thanks=<книга>
@@ -545,5 +704,6 @@
   window.addEventListener("scroll", () => { const h = document.querySelector(".site-head.on-hero"); if (h) h.classList.toggle("solid", scrollY > 60); }, { passive: true });
   window.addEventListener("hashchange", route);
   api.onAuth(async () => {});
+  applyLangMeta();
   refreshUser().then(route);
 })();

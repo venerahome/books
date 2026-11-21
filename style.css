@@ -250,3 +250,8 @@ details.pub summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px
 .m-btns{display:flex;flex-direction:column;gap:10px}
 .m-close{position:absolute;right:12px;top:10px;border:0;background:none;font-size:18px;color:var(--muted);padding:6px 10px}
 @keyframes fade{from{opacity:0}to{opacity:1}}
+/* Переключатель языка RU / EN / BG */
+.lang{display:inline-flex;border:1px solid currentColor;border-radius:999px;overflow:hidden;margin:0 6px;opacity:.9}
+.lang button{background:none;border:0;color:inherit;font-size:11px;letter-spacing:1px;padding:6px 9px;cursor:pointer;font-family:inherit}
+.lang button.on{background:var(--gold);color:#fff}
+@media (max-width:640px){.lang button{padding:6px 7px;font-size:10px}.lang{margin:0 2px}}
