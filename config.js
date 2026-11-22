@@ -7,13 +7,15 @@ window.READER_CONFIG = {
   // Ссылки на оплату Stripe (Payment Links). Пусто = покупка через WhatsApp автору
   PAYMENT_LINKS: {
     "phoenix-1": "",
-    "phoenix-1-en": ""
+    "phoenix-1-en": "",
+    "phoenix-1-bg": ""
   },
 
   // Какую главу открывает кнопка «Читать отрывок бесплатно» (номер главы)
   EXCERPT: {
     "phoenix-1": 6,
-    "phoenix-1-en": 6
+    "phoenix-1-en": 6,
+    "phoenix-1-bg": 6
   },
 
   // Контакты (номер без +)

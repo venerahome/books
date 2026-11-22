@@ -569,9 +569,25 @@
   function mailLink(email, bookTitle, bookId) {
     const site = location.origin + location.pathname;
     const wa = CFG.CONTACT_WHATSAPP ? "+" + CFG.CONTACT_WHATSAPP : "";
-    const en = /-en$/.test(bookId || "");
-    const subject = en ? `Your access to “${bookTitle}” is open` : `Доступ к книге «${bookTitle}» открыт`;
-    const body = en ? `Hello!
+    const en = /-en$/.test(bookId || ""), bg = /-bg$/.test(bookId || "");
+    const subject = en ? `Your access to “${bookTitle}” is open` : bg ? `Достъпът до книгата „${bookTitle}“ е отворен` : `Доступ к книге «${bookTitle}» открыт`;
+    const body = bg ? `Здравейте!
+
+Благодаря, че избрахте книгата „${bookTitle}“. Достъпът ви е отворен.
+
+Как да започнете да четете:
+1. Отворете сайта: ${site}
+2. Натиснете „Вход“ → „Регистрация“ и се регистрирайте с този имейл: ${email}
+   (ако вече сте регистрирани, просто влезте).
+   Езикът на сайта се сменя горе: RU / EN / BG.
+3. Натиснете „Започни да четеш“.
+
+Книгата се чете онлайн от телефон или компютър, а сайтът помни докъде сте стигнали.
+
+Приятно четене! Ако имате въпроси, просто отговорете на този имейл${wa ? " или ми пишете в WhatsApp: " + wa : ""}.
+
+С обич,
+Венера Хасанова` : en ? `Hello!
 
 Thank you for choosing “${bookTitle}”. Your access is now open.
 
