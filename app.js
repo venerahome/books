@@ -240,6 +240,11 @@
 
   const api = DEMO ? demoApi() : supaApi();
   const MANUAL_PAY = (id) => !DEMO && !((CFG.PAYMENT_LINKS || {})[id]);
+  // Книги, которые продаются в другом магазине (Amazon): вместо оплаты — кнопка-ссылка
+  const EXT = (id) => (CFG.EXTERNAL_BUY || {})[id];
+  const buyBtn = (id, cls, text) => EXT(id)
+    ? `<a class="${cls}" href="${esc(EXT(id).url)}" target="_blank" rel="noopener">${esc(EXT(id).label)}</a>`
+    : `<button class="${cls}" data-act="buy" data-book="${esc(id)}">${text}</button>`;
   let SESSION = null, ACCESS = new Set(), ADMIN = false, HOME_BOOK = null;
 
   async function refreshUser() {
@@ -289,7 +294,7 @@
       <div class="lt">${esc(b.title)}</div>
       <div class="ls">${esc(b.subtitle || "")}${ACCESS.has(b.id) ? " · " + L.bought : ""}</div>
       <p class="ld">${esc(String(b.description || "").split("\n")[0])}</p>
-      <div class="lp">${ACCESS.has(b.id) ? "" : `<b>${esc(b.price_label || "")}</b>`}<span>${L.more}</span></div></div></a>`).join("")}</div></div>` + foot();
+      <div class="lp">${ACCESS.has(b.id) ? "" : `<b>${esc(EXT(b.id) ? EXT(b.id).label : b.price_label || "")}</b>`}<span>${L.more}</span></div></div></a>`).join("")}</div></div>` + foot();
   }
 
   async function pageBook(id) {
@@ -315,7 +320,7 @@
             <p class="lead">${esc(paras[0] || "")}</p>
             <div class="cta">${owned
               ? `<a class="primary" href="#/read/${esc(id)}/${startIdx}">${last != null ? L.continueReading : L.startReading}</a><span class="owned">${L.owned}</span>`
-              : `<button class="primary" data-act="buy" data-book="${esc(id)}">${L.buyRead} · ${esc(b.price_label || "")}</button>
+              : `${buyBtn(id, "primary", `${L.buyRead} · ${esc(b.price_label || "")}`)}
                  ${firstFree ? `<a class="ghost-l" href="#/read/${esc(id)}/${firstFree.idx}">${L.readFree}</a>` : ""}`}
             </div>
             ${reviews.length ? `<div class="hero-rating">${stars(Math.round(avg))} <span>${avg.toFixed(1)} · ${L.reviewsN(reviews.length)}</span></div>` : ""}
@@ -330,9 +335,9 @@
             <div><span class="small gold">${L.aboutBook}</span><h2>${L.aboutTitle}</h2>
               ${paras.slice(1).map((p) => `<p class="muted big">${esc(p)}</p>`).join("")}
               <ul class="perks">${[L.perk1, L.perk2, L.perk3].map((p) => `<li><b>${p[0]}</b><span>${p[1]}</span></li>`).join("")}</ul>
-              ${owned ? "" : `<div class="buy-box"><div><span class="small">${L.ebook}</span><div class="price">${esc(b.price_label || "")}</div></div>
-                <button class="primary" data-act="buy" data-book="${esc(id)}">${L.buyRead}</button></div>
-                <p class="note">${freeNames.length ? `${L.free}: ${freeNames.map((t) => esc(t.kicker ? t.kicker + " " + L.q(t.name) : t.name)).join(", ")}. ` : ""}${MANUAL_PAY(id) ? L.noteManual : L.noteAuto}</p>`}
+              ${owned ? "" : `<div class="buy-box"><div><span class="small">${L.ebook}</span><div class="price">${EXT(id) ? "" : esc(b.price_label || "")}</div></div>
+                ${buyBtn(id, "primary", L.buyRead)}</div>
+                <p class="note">${freeNames.length ? `${L.free}: ${freeNames.map((t) => esc(t.kicker ? t.kicker + " " + L.q(t.name) : t.name)).join(", ")}. ` : ""}${EXT(id) ? "" : MANUAL_PAY(id) ? L.noteManual : L.noteAuto}</p>`}
             </div>
             <div><span class="small gold">${L.contents}</span>
               <ol class="toc">${toc.map((c) => {
@@ -416,10 +421,10 @@
         `<p class="${i === 0 ? "first" : ""}${/^[—“"]/.test(p.trim()) ? " dlg" : ""}">${esc(p).replace(/\*([^*]+)\*/g, "<em>$1</em>")}</p>`).join("");
     } else {
       body = `<div class="paywall"><h3>${L.paywallTitle}</h3>
-        <p>${MANUAL_PAY(id)
+        ${EXT(id) ? "" : `<p>${MANUAL_PAY(id)
           ? (SESSION ? L.payManualIn : L.payManualOut)
-          : (SESSION ? L.payAutoIn : L.payAutoOut)}</p>
-        <button class="btn btn-fire" data-act="buy" data-book="${esc(id)}">${esc(L.buyFor(b.price_label || ""))}</button></div>`;
+          : (SESSION ? L.payAutoIn : L.payAutoOut)}</p>`}
+        ${buyBtn(id, "btn btn-fire", esc(L.buyFor(b.price_label || "")))}</div>`;
     }
     const wm = SESSION ? watermark(SESSION.user.email) : "";
     $app.innerHTML = `<div class="progress" id="prog"></div>

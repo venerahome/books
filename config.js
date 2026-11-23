@@ -12,6 +12,11 @@ window.READER_CONFIG = {
   },
 
   // Какую главу открывает кнопка «Читать отрывок бесплатно» (номер главы)
+  // Книги, которые покупают в другом магазине: вместо кнопки оплаты — ссылка
+  EXTERNAL_BUY: {
+    "phoenix-1-en": { label: "Buy on Amazon", url: "https://www.amazon.com/dp/B0HSPDJBRV" }
+  },
+
   EXCERPT: {
     "phoenix-1": 6,
     "phoenix-1-en": 6,
