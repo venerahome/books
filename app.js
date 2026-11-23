@@ -242,8 +242,11 @@
   const MANUAL_PAY = (id) => !DEMO && !((CFG.PAYMENT_LINKS || {})[id]);
   // Книги, которые продаются в другом магазине (Amazon): вместо оплаты — кнопка-ссылка
   const EXT = (id) => (CFG.EXTERNAL_BUY || {})[id];
+  const extLabel = (id) => { const l = EXT(id).label; return typeof l === "object" ? (l[LANG] || l.en || "") : l; };
   const buyBtn = (id, cls, text) => EXT(id)
-    ? `<a class="${cls}" href="${esc(EXT(id).url)}" target="_blank" rel="noopener">${esc(EXT(id).label)}</a>`
+    ? (EXT(id).url
+      ? `<a class="${cls}" href="${esc(EXT(id).url)}" target="_blank" rel="noopener">${esc(extLabel(id))}</a>`
+      : `<span class="${cls} soon" aria-disabled="true">${esc(extLabel(id))}</span>`)
     : `<button class="${cls}" data-act="buy" data-book="${esc(id)}">${text}</button>`;
   let SESSION = null, ACCESS = new Set(), ADMIN = false, HOME_BOOK = null;
 
@@ -294,7 +297,7 @@
       <div class="lt">${esc(b.title)}</div>
       <div class="ls">${esc(b.subtitle || "")}${ACCESS.has(b.id) ? " · " + L.bought : ""}</div>
       <p class="ld">${esc(String(b.description || "").split("\n")[0])}</p>
-      <div class="lp">${ACCESS.has(b.id) ? "" : `<b>${esc(EXT(b.id) ? EXT(b.id).label : b.price_label || "")}</b>`}<span>${L.more}</span></div></div></a>`).join("")}</div></div>` + foot();
+      <div class="lp">${ACCESS.has(b.id) ? "" : `<b>${esc(EXT(b.id) ? extLabel(b.id) : b.price_label || "")}</b>`}<span>${L.more}</span></div></div></a>`).join("")}</div></div>` + foot();
   }
 
   async function pageBook(id) {
@@ -337,7 +340,7 @@
               <ul class="perks">${[L.perk1, L.perk2, L.perk3].map((p) => `<li><b>${p[0]}</b><span>${p[1]}</span></li>`).join("")}</ul>
               ${owned ? "" : `<div class="buy-box"><div><span class="small">${L.ebook}</span><div class="price">${EXT(id) ? "" : esc(b.price_label || "")}</div></div>
                 ${buyBtn(id, "primary", L.buyRead)}</div>
-                <p class="note">${freeNames.length ? `${L.free}: ${freeNames.map((t) => esc(t.kicker ? t.kicker + " " + L.q(t.name) : t.name)).join(", ")}. ` : ""}${EXT(id) ? "" : MANUAL_PAY(id) ? L.noteManual : L.noteAuto}</p>`}
+                <p class="note">${freeNames.length ? `${L.free}: ${freeNames.map((t) => esc(t.kicker ? t.kicker + " " + L.q(t.name) : t.name)).join(", ")}. ` : ""}${EXT(id) ? (EXT(id).url ? "" : esc(EXT(id).note ? (EXT(id).note[LANG] || EXT(id).note.en) : "")) : MANUAL_PAY(id) ? L.noteManual : L.noteAuto}</p>`}
             </div>
             <div><span class="small gold">${L.contents}</span>
               <ol class="toc">${toc.map((c) => {
@@ -421,7 +424,7 @@
         `<p class="${i === 0 ? "first" : ""}${/^[—“"]/.test(p.trim()) ? " dlg" : ""}">${esc(p).replace(/\*([^*]+)\*/g, "<em>$1</em>")}</p>`).join("");
     } else {
       body = `<div class="paywall"><h3>${L.paywallTitle}</h3>
-        ${EXT(id) ? "" : `<p>${MANUAL_PAY(id)
+        ${EXT(id) ? (EXT(id).note ? `<p>${esc(EXT(id).note[LANG] || EXT(id).note.en)}</p>` : "") : `<p>${MANUAL_PAY(id)
           ? (SESSION ? L.payManualIn : L.payManualOut)
           : (SESSION ? L.payAutoIn : L.payAutoOut)}</p>`}
         ${buyBtn(id, "btn btn-fire", esc(L.buyFor(b.price_label || "")))}</div>`;

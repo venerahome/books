@@ -272,3 +272,5 @@ details.pub summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px
   .lib-card .ld{font-size:13px;margin:6px 0 8px;-webkit-line-clamp:3}
   .lib-card .lp{font-size:13px}
 }
+/* Книга ещё не в продаже: неактивная кнопка «Coming soon» */
+.soon{opacity:.55;cursor:default;pointer-events:none}
