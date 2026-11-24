@@ -14,15 +14,10 @@ window.READER_CONFIG = {
   // Какую главу открывает кнопка «Читать отрывок бесплатно» (номер главы)
   // Книги, которые покупают в другом магазине: вместо кнопки оплаты — ссылка
   EXTERNAL_BUY: {
-    // Английская версия пока не продаётся. Когда появится ссылка на Amazon, замените этот блок на:
-    // "phoenix-1-en": { label: "Buy on Amazon", url: "https://www.amazon.com/dp/B0HSPDJBRV" }
+    // Английская книга продаётся на Amazon: кнопка ведёт на её страницу
     "phoenix-1-en": {
-      label: { en: "Coming soon", ru: "Скоро в продаже", bg: "Очаквайте скоро" },
-      note: {
-        en: "The English edition is being prepared and is not on sale yet. Meanwhile, enjoy the free excerpt.",
-        ru: "Английская версия готовится к выходу и пока не продаётся. А пока читайте бесплатный отрывок.",
-        bg: "Английското издание се подготвя и все още не се продава. Междувременно прочетете безплатния откъс."
-      }
+      label: { en: "Buy on Amazon", ru: "Купить на Amazon", bg: "Купи от Amazon" },
+      url: "https://www.amazon.com/dp/B0HSPDJBRV?th=1"
     }
   },
 

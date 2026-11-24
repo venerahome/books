@@ -420,14 +420,17 @@
     let body;
     if (ch && ch.body) {
       store.set("last_" + id, idx);
-      body = ch.body.split("\n").filter((p) => p.trim()).map((p, i) =>
-        `<p class="${i === 0 ? "first" : ""}${/^[—“"]/.test(p.trim()) ? " dlg" : ""}">${esc(p).replace(/\*([^*]+)\*/g, "<em>$1</em>")}</p>`).join("");
+      body = ch.body.split("\n").filter((p) => p.trim()).map((p, i) => {
+        const im = /^\[img:(.+?)(?:\|(.*))?\]$/.exec(p.trim());
+        if (im) return `<figure style="margin:28px auto;max-width:560px;text-align:center"><img src="${esc(im[1])}" alt="${esc(im[2] || "")}" loading="lazy" style="display:block;width:100%;height:auto;border-radius:10px;box-shadow:0 6px 24px rgba(60,40,90,.18)">${im[2] ? `<figcaption class="small" style="margin-top:8px;opacity:.75">${esc(im[2])}</figcaption>` : ""}</figure>`;
+        return `<p class="${i === 0 ? "first" : ""}${/^[—“"]/.test(p.trim()) ? " dlg" : ""}">${esc(p).replace(/\*([^*]+)\*/g, "<em>$1</em>")}</p>`;
+      }).join("");
     } else {
       body = `<div class="paywall"><h3>${L.paywallTitle}</h3>
         ${EXT(id) ? (EXT(id).note ? `<p>${esc(EXT(id).note[LANG] || EXT(id).note.en)}</p>` : "") : `<p>${MANUAL_PAY(id)
           ? (SESSION ? L.payManualIn : L.payManualOut)
           : (SESSION ? L.payAutoIn : L.payAutoOut)}</p>`}
-        ${buyBtn(id, "btn btn-fire", esc(L.buyFor(b.price_label || "")))}</div>`;
+        ${buyBtn(id, "btn btn-fire", esc(/\d/.test(b.price_label || "") ? L.buyFor(b.price_label) : L.buyRead))}</div>`;
     }
     const wm = SESSION ? watermark(SESSION.user.email) : "";
     $app.innerHTML = `<div class="progress" id="prog"></div>
