@@ -38,7 +38,7 @@
       contents: "Содержание", here: "вы здесь", freeTag: "бесплатно",
       authorEyebrow: "Автор", readersReviews: "Отзывы читателей", whatReaders: "Что говорят читатели",
       noReviews: "Отзывов пока нет — станьте первым, кто поделится впечатлениями.",
-      leaveReview: "Оставить отзыв", reviewModeration: "Отзыв появится на сайте после проверки автором.", rating: "Оценка",
+      whichBook: "Книга", leaveReview: "Оставить отзыв", reviewModeration: "Отзыв появится на сайте после проверки автором.", rating: "Оценка",
       yourName: "Ваше имя *", city: "Город", reviewField: "Отзыв *", reviewPh: "Что вас тронуло, какой момент запомнился…",
       sendReview: "Отправить отзыв", reviewThanks: "Спасибо! Ваш отзыв отправлен и появится после проверки.",
       errName: "Укажите, пожалуйста, имя.", errShort: "Напишите, пожалуйста, хотя бы пару предложений.", errTooSoon: "Вы только что отправили отзыв. Попробуйте чуть позже.", errSend: "Не получилось отправить: ",
@@ -82,7 +82,7 @@
       contents: "Contents", here: "you are here", freeTag: "free",
       authorEyebrow: "The author", readersReviews: "Reader reviews", whatReaders: "What readers say",
       noReviews: "No reviews yet — be the first to share your impressions.",
-      leaveReview: "Leave a review", reviewModeration: "Your review will appear after the author approves it.", rating: "Rating",
+      whichBook: "Book", leaveReview: "Leave a review", reviewModeration: "Your review will appear after the author approves it.", rating: "Rating",
       yourName: "Your name *", city: "City", reviewField: "Review *", reviewPh: "What touched you, which moment stayed with you…",
       sendReview: "Send review", reviewThanks: "Thank you! Your review has been sent and will appear after approval.",
       errName: "Please enter your name.", errShort: "Please write at least a couple of sentences.", errTooSoon: "You have just sent a review. Please try again a little later.", errSend: "Could not send: ",
@@ -126,7 +126,7 @@
       contents: "Съдържание", here: "тук сте", freeTag: "безплатно",
       authorEyebrow: "Авторът", readersReviews: "Отзиви на читатели", whatReaders: "Какво казват читателите",
       noReviews: "Все още няма отзиви — бъдете първият, който ще сподели впечатленията си.",
-      leaveReview: "Оставете отзив", reviewModeration: "Отзивът ще се появи на сайта след проверка от автора.", rating: "Оценка",
+      whichBook: "Книга", leaveReview: "Оставете отзив", reviewModeration: "Отзивът ще се появи на сайта след проверка от автора.", rating: "Оценка",
       yourName: "Вашето име *", city: "Град", reviewField: "Отзив *", reviewPh: "Какво ви докосна, кой момент ви остана в сърцето…",
       sendReview: "Изпрати отзив", reviewThanks: "Благодаря! Отзивът ви е изпратен и ще се появи след проверка.",
       errName: "Моля, напишете името си.", errShort: "Моля, напишете поне няколко изречения.", errTooSoon: "Току-що изпратихте отзив. Опитайте отново малко по-късно.", errSend: "Неуспешно изпращане: ",
@@ -188,7 +188,7 @@
       async accessList() { return ok(await sb.from("access").select("*").order("created_at", { ascending: false })); },
       async grant(email, book, note) { ok(await sb.from("access").upsert({ email: email.toLowerCase().trim(), book_id: book, source: "manual", note }, { onConflict: "email,book_id" })); },
       async revoke(email, book) { ok(await sb.from("access").delete().eq("email", email).eq("book_id", book)); },
-      async reviews(book) { return ok(await sb.from("reviews").select("id,name,city,rating,body,created_at").eq("book_id", book).eq("approved", true).order("created_at", { ascending: false })); },
+      async reviews(ids) { let q = sb.from("reviews").select("id,book_id,name,city,rating,body,created_at").eq("approved", true); if (ids) q = q.in("book_id", ids); return ok(await q.order("created_at", { ascending: false })); },
       async addReview(r) { ok(await sb.from("reviews").insert(r)); },
       async allReviews() { return ok(await sb.from("reviews").select("*").order("created_at", { ascending: false })); },
       async setReview(id, approved) { ok(await sb.from("reviews").update({ approved }).eq("id", id)); },
@@ -229,7 +229,7 @@
       async grant(email, book) { access.add(book); store.set("demo_access", [...access]); },
       async revoke(email, book) { access.delete(book); store.set("demo_access", [...access]); },
       async importBook() {},
-      async reviews(book) { return store.get("demo_reviews", D.reviews || []).filter((r) => r.approved && r.book_id === book); },
+      async reviews(ids) { return store.get("demo_reviews", D.reviews || []).filter((r) => r.approved && (!ids || ids.includes(r.book_id))); },
       async addReview(r) { const a = store.get("demo_reviews", D.reviews || []); a.unshift({ ...r, id: String(Date.now()), approved: false, created_at: new Date().toISOString() }); store.set("demo_reviews", a); },
       async allReviews() { return store.get("demo_reviews", D.reviews || []); },
       async setReview(id, approved) { const a = store.get("demo_reviews", D.reviews || []); a.forEach((r) => { if (r.id === id) r.approved = approved; }); store.set("demo_reviews", a); },
@@ -291,17 +291,68 @@
     const books = (await api.books()).slice().sort((a, b) => { const w = (x) => (bookLang(x) === LANG ? 0 : bookLang(x) === "ru" ? 1 : 2); return w(a) - w(b) || (a.sort || 0) - (b.sort || 0); });
     HOME_BOOK = books[0] ? books[0].id : null;
     if (books.length === 1) return pageBook(books[0].id);
+    const reviews = await api.reviews(null).catch(() => []);
+    const titles = {}; books.forEach((b) => { titles[b.id] = b.title; });
     document.body.className = "";
     $app.innerHTML = topbar() + `<div class="section"><h2>${L.books}</h2><div class="library">${books.map((b) => `
       <a class="lib-card" href="#/book/${esc(b.id)}"><img src="${esc(b.cover_url)}" alt="${esc(L.coverAlt(b.title))}"><div class="li">
       <div class="lt">${esc(b.title)}</div>
       <div class="ls">${esc(b.subtitle || "")}${ACCESS.has(b.id) ? " · " + L.bought : ""}</div>
       <p class="ld">${esc(String(b.description || "").split("\n")[0])}</p>
-      <div class="lp">${ACCESS.has(b.id) ? "" : `<b>${esc(EXT(b.id) ? extLabel(b.id) : b.price_label || "")}</b>`}<span>${L.more}</span></div></div></a>`).join("")}</div></div>` + foot();
+      <div class="lp">${ACCESS.has(b.id) ? "" : `<b>${esc(EXT(b.id) ? extLabel(b.id) : b.price_label || "")}</b>`}<span>${L.more}</span></div></div></a>`).join("")}</div></div><main>${reviewsSection(reviews, HOME_BOOK, titles)}</main>` + foot();
+    bindReviewForm(HOME_BOOK);
+  }
+
+  // Отзывы: одна книга на всех языках = одна «семья» (phoenix-1, phoenix-1-en, phoenix-1-bg)
+  const family = (id) => { const base = String(id).replace(/-(en|bg|ru)$/, ""); return [base, base + "-en", base + "-bg", base + "-ru"]; };
+  // reviews — список отзывов; bookId — книга по умолчанию; titles — {id: название} для главной (тогда видно, к какой книге отзыв, и есть выбор книги)
+  function reviewsSection(reviews, bookId, titles) {
+    const avg = reviews.length ? (reviews.reduce((a, r) => a + (r.rating || 5), 0) / reviews.length) : 0;
+    return `
+        <section class="block" id="reviews">
+          <div class="rev-head"><div><span class="small gold">${L.readersReviews}</span><h2>${L.whatReaders}</h2></div>
+            ${reviews.length ? `<div class="rev-avg"><b>${avg.toFixed(1)}</b>${stars(Math.round(avg))}<span>${L.reviewsN(reviews.length)}</span></div>` : ""}</div>
+          <div class="rev-grid">${reviews.length ? reviews.map((r) => `<article class="rev">${stars(r.rating || 5)}${titles && titles[r.book_id] ? `<div class="rev-book">${esc(titles[r.book_id])}</div>` : ""}<p>${esc(r.body)}</p>
+              <div class="rev-by"><b>${esc(r.name)}</b>${r.city ? ` · ${esc(r.city)}` : ""}<span>${esc(new Date(r.created_at).toLocaleDateString(L.locale, { day: "numeric", month: "long", year: "numeric" }))}</span></div></article>`).join("")
+            : `<p class="muted">${L.noReviews}</p>`}</div>
+          <form class="rev-form" id="revForm" novalidate>
+            <h3>${L.leaveReview}</h3><p class="muted">${L.reviewModeration}</p>
+            ${titles ? `<label class="field"><span>${L.whichBook}</span><select name="book">${Object.keys(titles).map((k) => `<option value="${esc(k)}" ${k === bookId ? "selected" : ""}>${esc(titles[k])}</option>`).join("")}</select></label>` : ""}
+            <div class="rate" role="radiogroup" aria-label="${L.rating}">${[5, 4, 3, 2, 1].map((n) => `<input type="radio" name="rating" id="r${n}" value="${n}" ${n === 5 ? "checked" : ""}><label for="r${n}" title="${n}">★</label>`).join("")}</div>
+            <div class="f2"><label class="field"><span>${L.yourName}</span><input name="name" maxlength="60" required></label>
+              <label class="field"><span>${L.city}</span><input name="city" maxlength="60"></label></div>
+            <label class="field"><span>${L.reviewField}</span><textarea name="body" rows="5" maxlength="2000" required placeholder="${L.reviewPh}"></textarea></label>
+            <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <div class="err" id="revErr"></div>
+            <button class="primary" type="submit">${L.sendReview}</button>
+            <p class="form-ok" id="revOk" hidden>${L.reviewThanks}</p>
+          </form>
+        </section>`;
+  }
+  function bindReviewForm(id) {
+    const f = document.getElementById("revForm"); if (!f) return;
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(f), err = document.getElementById("revErr"), btn = f.querySelector("button[type=submit]");
+      err.textContent = "";
+      if (fd.get("website")) return;
+      const name = String(fd.get("name") || "").trim(), body = String(fd.get("body") || "").trim();
+      if (!name) { err.textContent = L.errName; return; }
+      if (body.length < 10) { err.textContent = L.errShort; return; }
+      const lastSent = store.get("rev_sent", 0);
+      if (Date.now() - lastSent < 60000) { err.textContent = L.errTooSoon; return; }
+      btn.disabled = true;
+      try {
+        await api.addReview({ book_id: String(fd.get("book") || id), name, city: String(fd.get("city") || "").trim() || null, rating: Number(fd.get("rating") || 5), body });
+        store.set("rev_sent", Date.now());
+        f.querySelectorAll(".field,.rate,.f2,button[type=submit]").forEach((x) => (x.style.display = "none"));
+        document.getElementById("revOk").hidden = false;
+      } catch (ex) { err.textContent = L.errSend + (ex.message || ex); btn.disabled = false; }
+    };
   }
 
   async function pageBook(id) {
-    const [b, toc, reviews] = await Promise.all([api.book(id), api.toc(id), api.reviews(id).catch(() => [])]);
+    const [b, toc, reviews] = await Promise.all([api.book(id), api.toc(id), api.reviews(family(id)).catch(() => [])]);
     if (!b) return pageNotFound();
     document.body.className = "";
     const owned = ACCESS.has(id) || ADMIN;
@@ -362,44 +413,9 @@
           </div>
         </section>
 
-        <section class="block" id="reviews">
-          <div class="rev-head"><div><span class="small gold">${L.readersReviews}</span><h2>${L.whatReaders}</h2></div>
-            ${reviews.length ? `<div class="rev-avg"><b>${avg.toFixed(1)}</b>${stars(Math.round(avg))}<span>${L.reviewsN(reviews.length)}</span></div>` : ""}</div>
-          <div class="rev-grid">${reviews.length ? reviews.map((r) => `<article class="rev">${stars(r.rating || 5)}<p>${esc(r.body)}</p>
-              <div class="rev-by"><b>${esc(r.name)}</b>${r.city ? ` · ${esc(r.city)}` : ""}<span>${esc(new Date(r.created_at).toLocaleDateString(L.locale, { day: "numeric", month: "long", year: "numeric" }))}</span></div></article>`).join("")
-            : `<p class="muted">${L.noReviews}</p>`}</div>
-          <form class="rev-form" id="revForm" novalidate>
-            <h3>${L.leaveReview}</h3><p class="muted">${L.reviewModeration}</p>
-            <div class="rate" role="radiogroup" aria-label="${L.rating}">${[5, 4, 3, 2, 1].map((n) => `<input type="radio" name="rating" id="r${n}" value="${n}" ${n === 5 ? "checked" : ""}><label for="r${n}" title="${n}">★</label>`).join("")}</div>
-            <div class="f2"><label class="field"><span>${L.yourName}</span><input name="name" maxlength="60" required></label>
-              <label class="field"><span>${L.city}</span><input name="city" maxlength="60"></label></div>
-            <label class="field"><span>${L.reviewField}</span><textarea name="body" rows="5" maxlength="2000" required placeholder="${L.reviewPh}"></textarea></label>
-            <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <div class="err" id="revErr"></div>
-            <button class="primary" type="submit">${L.sendReview}</button>
-            <p class="form-ok" id="revOk" hidden>${L.reviewThanks}</p>
-          </form>
-        </section>
+        ${reviewsSection(reviews, id, null)}
       </main>` + foot();
-    const f = document.getElementById("revForm");
-    f.onsubmit = async (e) => {
-      e.preventDefault();
-      const fd = new FormData(f), err = document.getElementById("revErr"), btn = f.querySelector("button[type=submit]");
-      err.textContent = "";
-      if (fd.get("website")) return;
-      const name = String(fd.get("name") || "").trim(), body = String(fd.get("body") || "").trim();
-      if (!name) { err.textContent = L.errName; return; }
-      if (body.length < 10) { err.textContent = L.errShort; return; }
-      const lastSent = store.get("rev_sent", 0);
-      if (Date.now() - lastSent < 60000) { err.textContent = L.errTooSoon; return; }
-      btn.disabled = true;
-      try {
-        await api.addReview({ book_id: id, name, city: String(fd.get("city") || "").trim() || null, rating: Number(fd.get("rating") || 5), body });
-        store.set("rev_sent", Date.now());
-        f.querySelectorAll(".field,.rate,.f2,button[type=submit]").forEach((x) => (x.style.display = "none"));
-        document.getElementById("revOk").hidden = false;
-      } catch (ex) { err.textContent = L.errSend + (ex.message || ex); btn.disabled = false; }
-    };
+    bindReviewForm(id);
   }
   function plural(n, one, few, many) {
     const m10 = n % 10, m100 = n % 100;
@@ -420,17 +436,14 @@
     let body;
     if (ch && ch.body) {
       store.set("last_" + id, idx);
-      body = ch.body.split("\n").filter((p) => p.trim()).map((p, i) => {
-        const im = /^\[img:(.+?)(?:\|(.*))?\]$/.exec(p.trim());
-        if (im) return `<figure style="margin:28px auto;max-width:560px;text-align:center"><img src="${esc(im[1])}" alt="${esc(im[2] || "")}" loading="lazy" style="display:block;width:100%;height:auto;border-radius:10px;box-shadow:0 6px 24px rgba(60,40,90,.18)">${im[2] ? `<figcaption class="small" style="margin-top:8px;opacity:.75">${esc(im[2])}</figcaption>` : ""}</figure>`;
-        return `<p class="${i === 0 ? "first" : ""}${/^[—“"]/.test(p.trim()) ? " dlg" : ""}">${esc(p).replace(/\*([^*]+)\*/g, "<em>$1</em>")}</p>`;
-      }).join("");
+      body = ch.body.split("\n").filter((p) => p.trim()).map((p, i) =>
+        `<p class="${i === 0 ? "first" : ""}${/^[—“"]/.test(p.trim()) ? " dlg" : ""}">${esc(p).replace(/\*([^*]+)\*/g, "<em>$1</em>")}</p>`).join("");
     } else {
       body = `<div class="paywall"><h3>${L.paywallTitle}</h3>
         ${EXT(id) ? (EXT(id).note ? `<p>${esc(EXT(id).note[LANG] || EXT(id).note.en)}</p>` : "") : `<p>${MANUAL_PAY(id)
           ? (SESSION ? L.payManualIn : L.payManualOut)
           : (SESSION ? L.payAutoIn : L.payAutoOut)}</p>`}
-        ${buyBtn(id, "btn btn-fire", esc(/\d/.test(b.price_label || "") ? L.buyFor(b.price_label) : L.buyRead))}</div>`;
+        ${buyBtn(id, "btn btn-fire", esc(L.buyFor(b.price_label || "")))}</div>`;
     }
     const wm = SESSION ? watermark(SESSION.user.email) : "";
     $app.innerHTML = `<div class="progress" id="prog"></div>
